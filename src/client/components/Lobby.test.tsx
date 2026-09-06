@@ -27,8 +27,8 @@ function waitingRoom(ready: boolean, questionCount = 10): GameRoomState {
     hostPlayerId: "player-a",
     maxPlayers: 5,
     players: [
-      { id: "player-a", nickname: "Alpha", slotIndex: 0, active: true, connected: true, ready, score: 0, submitted: false, assetReady: false },
-      { id: "player-b", nickname: "Bravo", slotIndex: 1, active: true, connected: true, ready: false, score: 0, submitted: false, assetReady: false },
+      { id: "player-a", nickname: "Alpha", slotIndex: 0, active: true, connected: true, ready, score: 0, submitted: false, assetReady: false, postMatchState: null },
+      { id: "player-b", nickname: "Bravo", slotIndex: 1, active: true, connected: true, ready: false, score: 0, submitted: false, assetReady: false, postMatchState: null },
     ],
     round: 0,
     questionCount,
@@ -39,6 +39,7 @@ function waitingRoom(ready: boolean, questionCount = 10): GameRoomState {
     roundStartedAt: null,
     roundEndsAt: null,
     roundResult: null,
+    completedMatch: null,
     assetOrigin: "",
     failureCode: null,
     stateVersion: 1,
@@ -105,6 +106,7 @@ describe("Lobby ready toggle", () => {
       score: 0,
       submitted: false,
       assetReady: false,
+      postMatchState: null,
     }));
     room.hostPlayerId = "player-0";
     render(<Lobby room={room} playerId="player-0" onReady={vi.fn()} onStart={vi.fn()} />);

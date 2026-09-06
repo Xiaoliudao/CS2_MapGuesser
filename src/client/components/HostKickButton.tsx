@@ -5,6 +5,7 @@ export function HostKickButton({
   hostPlayerId,
   target,
   status,
+  allowFinished = false,
   isKicking = false,
   onKick,
 }: {
@@ -12,6 +13,7 @@ export function HostKickButton({
   hostPlayerId: string | null;
   target: PublicPlayer;
   status: RoomStatus;
+  allowFinished?: boolean;
   isKicking?: boolean;
   onKick: (playerId: string) => void;
 }) {
@@ -19,7 +21,7 @@ export function HostKickButton({
     viewerPlayerId !== hostPlayerId
     || target.id === hostPlayerId
     || !target.active
-    || status === "finished"
+    || (status === "finished" && !allowFinished)
   ) return null;
 
   return (

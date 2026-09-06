@@ -36,15 +36,20 @@ export function Lobby({
     .sort((left, right) => left.slotIndex - right.slotIndex);
   const playersBySlot = new Map(activePlayers.map((player) => [player.slotIndex, player]));
   const isHost = room.hostPlayerId === playerId;
+  const viewingResultsPlayers = activePlayers.filter((player) => player.postMatchState === "viewing_results");
+  const returnedFromResults = room.status === "finished";
   const enoughPlayers = activePlayers.length >= MIN_MULTIPLAYER_PLAYERS;
   const allPlayersReady = enoughPlayers
+    && viewingResultsPlayers.length === 0
     && activePlayers.every((player) => player.ready && player.connected);
   const questionsReady = room.questionCount >= room.settings.totalRounds;
-  const canStart = isHost && allPlayersReady && questionsReady;
+  const canStart = room.status === "waiting" && isHost && allPlayersReady && questionsReady;
   const openSlots = Math.max(0, room.maxPlayers - activePlayers.length);
   const unreadyCount = activePlayers.filter((player) => !player.ready || !player.connected).length;
 
-  const waitingMessage = !enoughPlayers
+  const waitingMessage = viewingResultsPlayers.length > 0
+    ? `WAITING FOR ${viewingResultsPlayers.length} PLAYER${viewingResultsPlayers.length === 1 ? "" : "S"} TO RETURN…`
+    : !enoughPlayers
     ? "WAITING FOR AT LEAST ONE MORE PLAYER…"
     : !allPlayersReady
       ? `WAITING FOR ${unreadyCount} PLAYER${unreadyCount === 1 ? "" : "S"} TO READY UP…`
@@ -54,9 +59,11 @@ export function Lobby({
 
   return (
     <section className="stage-card lobby-card">
-      <div className="stage-kicker">PRE-MATCH</div>
+      <div className="stage-kicker">{returnedFromResults ? "NEXT MATCH" : "PRE-MATCH"}</div>
       <h2>WAITING ROOM</h2>
-      <p>{activePlayers.length} / {room.maxPlayers} players · {room.settings.totalRounds} locations · One winner.</p>
+      <p>{viewingResultsPlayers.length > 0
+        ? `${viewingResultsPlayers.length} player${viewingResultsPlayers.length === 1 ? " is" : "s are"} still viewing the final results.`
+        : `${activePlayers.length} / ${room.maxPlayers} players · ${room.settings.totalRounds} locations · One winner.`}</p>
       <WaitingRoomSettings
         room={room}
         playerId={playerId}
@@ -67,6 +74,7 @@ export function Lobby({
       <div className="lobby-slots" aria-label="Room players">
         {Array.from({ length: room.maxPlayers }, (_, slot) => {
           const player = playersBySlot.get(slot);
+          const viewingResults = player?.postMatchState === "viewing_results";
           return player ? (
             <div className={`lobby-player player-slot-${slot + 1}`} key={player.id}>
               <div className="avatar">{player.nickname.slice(0, 1).toUpperCase()}</div>
@@ -80,8 +88,8 @@ export function Lobby({
                 <span>{player.connected ? "ONLINE" : "RECONNECTING"}</span>
               </div>
               <div className="lobby-player-actions">
-                <b className={player.ready ? "ready" : "not-ready"}>
-                  {player.ready ? "READY ✓" : "NOT READY"}
+                <b className={viewingResults ? "viewing-results" : player.ready ? "ready" : "not-ready"}>
+                  {viewingResults ? "VIEWING RESULTS" : player.ready ? "READY ✓" : "NOT READY"}
                 </b>
                 {onKick && (
                   <HostKickButton
@@ -89,6 +97,7 @@ export function Lobby({
                     hostPlayerId={room.hostPlayerId}
                     target={player}
                     status={room.status}
+                    allowFinished={returnedFromResults}
                     isKicking={kickingPlayerId === player.id}
                     onKick={onKick}
                   />
@@ -129,7 +138,7 @@ export function Lobby({
           className="primary-button ready-button"
           type="button"
           aria-pressed={Boolean(me?.ready)}
-          disabled={!me || !me.active}
+          disabled={!me || !me.active || me.postMatchState === "viewing_results"}
           onClick={onReady}
         >
           {me?.ready ? "CANCEL READY" : "READY UP"}

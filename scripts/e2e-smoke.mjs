@@ -355,12 +355,97 @@ try {
   for (const client of [...capacityGuests, ...slotFiveContenders]) client.close();
 }
 
+const fivePlayerSettings = { ...requestedSettings, totalRounds: 1 };
+const fivePlayerHostId = crypto.randomUUID();
+const fivePlayerCreateResponse = await fetch(`${baseUrl}/api/rooms`, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    settings: fivePlayerSettings,
+    creator: { playerId: fivePlayerHostId, nickname: "Replay Host" },
+  }),
+});
+assert(fivePlayerCreateResponse.status === 201, `Expected five-player replay room creation 201, got ${fivePlayerCreateResponse.status}`);
+const { roomCode: fivePlayerRoomCode } = await fivePlayerCreateResponse.json();
+const fivePlayerClients = [
+  new TestClient("Replay Host", fivePlayerHostId, fivePlayerRoomCode),
+  ...Array.from({ length: 4 }, (_, index) => (
+    new TestClient(`Replay Guest ${index + 2}`, crypto.randomUUID(), fivePlayerRoomCode)
+  )),
+];
+try {
+  await Promise.all(fivePlayerClients.map((client) => client.connect()));
+  await fivePlayerClients[0].waitFor((state) => state.status === "waiting" && state.players.length === 5);
+  for (const client of fivePlayerClients) client.send({ type: "player:ready" });
+  await fivePlayerClients[0].waitFor((state) => state.players.every((player) => player.ready));
+  fivePlayerClients[0].send({ type: "game:start" });
+  const fivePlayerPreparing = await fivePlayerClients[0].waitFor(
+    (state) => state.status === "round_preparing" && state.round === 1,
+  );
+  for (const client of fivePlayerClients) {
+    client.send({
+      type: "round:asset-ready",
+      payload: { round: 1, questionId: fivePlayerPreparing.currentQuestion.questionId, loadMs: 100 },
+    });
+  }
+  await fivePlayerClients[0].waitFor((state) => state.status === "playing" && state.round === 1);
+  for (const [index, client] of fivePlayerClients.entries()) {
+    client.send({
+      type: "guess:submit",
+      payload: {
+        round: 1,
+        eventId: crypto.randomUUID(),
+        mapId: guessMapId,
+        layerId: guessLayerId,
+        point: { x: 0.2 + index * 0.1, y: 0.25 + index * 0.1 },
+      },
+    });
+  }
+  await fivePlayerClients[0].waitFor((state) => state.status === "round_result" && state.round === 1);
+  const fivePlayerFinished = await fivePlayerClients[0].waitFor(
+    (state) => state.status === "finished" && state.players.length === 5,
+  );
+  const fivePlayerSnapshotJson = JSON.stringify(fivePlayerFinished.completedMatch);
+  assert(fivePlayerFinished.players.every((player) => player.postMatchState === "viewing_results"), "Five-player match did not keep everyone on results");
+
+  fivePlayerClients[0].send({ type: "game:play-again" });
+  fivePlayerClients[2].send({ type: "game:play-again" });
+  const partiallyReturned = await fivePlayerClients[0].waitFor((state) => (
+    state.status === "finished"
+      && state.players.filter((player) => player.postMatchState === "returned_to_lobby").length === 2
+  ));
+  assert(
+    partiallyReturned.players.filter((player) => player.postMatchState === "viewing_results").length === 3,
+    "Two five-player returns moved unrelated viewers off final results",
+  );
+  assert(JSON.stringify(partiallyReturned.completedMatch) === fivePlayerSnapshotJson, "Partial five-player return mutated standings");
+
+  fivePlayerClients[1].send({ type: "game:play-again" });
+  fivePlayerClients[3].send({ type: "game:play-again" });
+  await fivePlayerClients[0].waitFor((state) => (
+    state.status === "finished"
+      && state.players.filter((player) => player.postMatchState === "returned_to_lobby").length === 4
+  ));
+  fivePlayerClients[4].send({ type: "player:leave" });
+  await fivePlayerClients[4].waitForLeft(fivePlayerClients[4].playerId);
+  const afterFinalViewerLeft = await fivePlayerClients[0].waitFor((state) => (
+    state.status === "waiting" && state.players.length === 4
+  ));
+  assert(
+    afterFinalViewerLeft.players.every((player) => player.id !== fivePlayerClients[4].playerId),
+    "A final-results leaver still blocked the next lobby",
+  );
+  assert(JSON.stringify(afterFinalViewerLeft.completedMatch) === fivePlayerSnapshotJson, "Final-results leave destroyed the completed snapshot");
+} finally {
+  for (const client of fivePlayerClients) client.close();
+}
+
 const kickHostId = crypto.randomUUID();
 const kickCreateResponse = await fetch(`${baseUrl}/api/rooms`, {
   method: "POST",
   headers: { "content-type": "application/json" },
   body: JSON.stringify({
-    settings: requestedSettings,
+    settings: { ...requestedSettings, totalRounds: 1 },
     creator: { playerId: kickHostId, nickname: "Kick Host" },
   }),
 });
@@ -462,6 +547,28 @@ try {
     kickedRoundResult.roundResult.players.filter((player) => submitters.some((client) => client.playerId === player.playerId)).every((player) => player.submitted),
     "Playing-phase kick did not finish after every remaining player had submitted",
   );
+
+  const kickRoomFinished = await kickHost.waitFor((state) => state.status === "finished" && state.round === 1);
+  const kickRoomSnapshotJson = JSON.stringify(kickRoomFinished.completedMatch);
+  kickHost.send({ type: "game:play-again" });
+  await kickHost.waitFor((state) => (
+    state.status === "finished"
+      && state.players.find((player) => player.id === kickHost.playerId)?.postMatchState === "returned_to_lobby"
+  ));
+  const postMatchKickTarget = kickGuests[1];
+  kickHost.send({ type: "player:kick", payload: { targetPlayerId: postMatchKickTarget.playerId } });
+  await postMatchKickTarget.waitForKicked();
+  const afterPostMatchKick = await kickHost.waitFor((state) => (
+    state.status === "finished"
+      && state.players.find((player) => player.id === postMatchKickTarget.playerId)?.active === false
+  ));
+  assert(JSON.stringify(afterPostMatchKick.completedMatch) === kickRoomSnapshotJson, "Post-match kick mutated final standings");
+  kickGuests[0].send({ type: "game:play-again" });
+  const afterRemainingViewerReturned = await kickHost.waitFor((state) => state.status === "waiting");
+  assert(
+    afterRemainingViewerReturned.players.every((player) => player.id !== postMatchKickTarget.playerId),
+    "Kicked final-results player remained in the next lobby",
+  );
 } finally {
   kickHost.close();
   for (const client of kickGuests) client.close();
@@ -488,6 +595,7 @@ assert(existsResponse.ok, "Created room was not discoverable");
 const alpha = new TestClient("Alpha", alphaPlayerId, roomCode);
 const bravo = new TestClient("Bravo", crypto.randomUUID(), roomCode);
 let activeAlpha = alpha;
+let activeBravo = bravo;
 
 try {
   await Promise.all([alpha.connect(), bravo.connect()]);
@@ -669,13 +777,86 @@ try {
     }
   }
 
-  const finalState = await activeAlpha.waitFor((state) => state.status === "finished" && state.round === roundsToPlay);
+  const [finalState, bravoFinalState] = await Promise.all([
+    activeAlpha.waitFor((state) => state.status === "finished" && state.round === roundsToPlay),
+    activeBravo.waitFor((state) => state.status === "finished" && state.round === roundsToPlay),
+  ]);
   assert(finalState.players.length === 2, "Final result is missing a player");
   assert(finalState.players.every((player) => Number.isInteger(player.score)), "Final result exposed a fractional total score");
+  assert(finalState.completedMatch?.matchId, "Final result omitted the completed match snapshot");
+  assert(
+    finalState.players.every((player) => player.postMatchState === "viewing_results"),
+    "Finished match did not start every player on final results",
+  );
+  const completedSnapshotJson = JSON.stringify(finalState.completedMatch);
+  assert(completedSnapshotJson === JSON.stringify(bravoFinalState.completedMatch), "Players received different final snapshots");
+
   activeAlpha.send({ type: "game:play-again" });
-  const replayState = await activeAlpha.waitFor((state) => state.status === "waiting" && state.round === 0);
-  assert(replayState.players.every((player) => player.score === 0 && !player.ready), "Play again did not reset scores and ready state");
-  assert(JSON.stringify(replayState.settings) === JSON.stringify(requestedSettings), "Play again did not preserve RoomSettings");
+  const [alphaReturnedState, bravoViewingState] = await Promise.all([
+    activeAlpha.waitFor((state) => (
+      state.status === "finished"
+      && state.players.find((player) => player.id === alpha.playerId)?.postMatchState === "returned_to_lobby"
+    )),
+    activeBravo.waitFor((state) => (
+      state.status === "finished"
+      && state.players.find((player) => player.id === alpha.playerId)?.postMatchState === "returned_to_lobby"
+      && state.players.find((player) => player.id === bravo.playerId)?.postMatchState === "viewing_results"
+    )),
+  ]);
+  assert(alphaReturnedState.round === roundsToPlay, "First Play Again reset the completed match globally");
+  assert(alphaReturnedState.players.find((player) => player.id === alpha.playerId)?.ready === false, "Play Again automatically readied the returned player");
+  assert(JSON.stringify(alphaReturnedState.completedMatch) === completedSnapshotJson, "Returned player mutated the final snapshot");
+  assert(JSON.stringify(bravoViewingState.completedMatch) === completedSnapshotJson, "A result viewer lost the final snapshot");
+
+  const nextMatchUpdate = {
+    totalRounds: requestedSettings.totalRounds,
+    roundDurationSeconds: 30,
+    mapPool: [...requestedSettings.mapPool],
+    difficultyPool: [...requestedSettings.difficultyPool],
+  };
+  const nextMatchSettings = { ...nextMatchUpdate, serverRegion: requestedSettings.serverRegion };
+  activeAlpha.send({ type: "room:update-settings", payload: { settings: nextMatchUpdate } });
+  const [updatedNextLobby, unchangedFinalViewer] = await Promise.all([
+    activeAlpha.waitFor((state) => state.status === "finished" && state.settings.roundDurationSeconds === 30),
+    activeBravo.waitFor((state) => state.status === "finished" && state.settings.roundDurationSeconds === 30),
+  ]);
+  assert(updatedNextLobby.completedMatch.settings.roundDurationSeconds === 20, "Next-match settings mutated completed settings");
+  assert(JSON.stringify(unchangedFinalViewer.completedMatch) === completedSnapshotJson, "Settings update changed a viewer's final snapshot");
+
+  activeAlpha.send({ type: "player:ready" });
+  await activeAlpha.waitFor((state) => state.players.find((player) => player.id === alpha.playerId)?.ready === true);
+  activeAlpha.lastError = null;
+  activeAlpha.send({ type: "game:start" });
+  await activeAlpha.waitForError("GAME_ALREADY_STARTED");
+  assert(activeBravo.lastState.status === "finished", "Host started a next match while another player viewed results");
+
+  activeAlpha.close();
+  activeAlpha = new TestClient("Alpha", alpha.playerId, roomCode);
+  await activeAlpha.connect();
+  await activeAlpha.waitFor((state) => (
+    state.status === "finished"
+    && state.players.find((player) => player.id === alpha.playerId)?.postMatchState === "returned_to_lobby"
+  ));
+  activeBravo.close();
+  activeBravo = new TestClient("Bravo", bravo.playerId, roomCode);
+  await activeBravo.connect();
+  const restoredFinalViewer = await activeBravo.waitFor((state) => (
+    state.status === "finished"
+    && state.players.find((player) => player.id === bravo.playerId)?.postMatchState === "viewing_results"
+  ));
+  assert(JSON.stringify(restoredFinalViewer.completedMatch) === completedSnapshotJson, "Final-results reconnect lost the completed snapshot");
+
+  activeBravo.send({ type: "game:play-again" });
+  const [replayState, replayStateForBravo] = await Promise.all([
+    activeAlpha.waitFor((state) => state.status === "waiting" && state.round === 0),
+    activeBravo.waitFor((state) => state.status === "waiting" && state.round === 0),
+  ]);
+  assert(replayState.roomCode === roomCode && replayStateForBravo.roomCode === roomCode, "Play Again changed the room code");
+  assert(replayState.players.every((player) => player.score === 0), "All-return transition did not reset next-match scores");
+  assert(replayState.players.find((player) => player.id === alpha.playerId)?.ready === true, "Returned player's explicit ready state was lost");
+  assert(replayState.players.find((player) => player.id === bravo.playerId)?.ready === false, "Last returning player was automatically readied");
+  assert(JSON.stringify(replayState.settings) === JSON.stringify(nextMatchSettings), "Next-match RoomSettings were not preserved");
+  assert(JSON.stringify(replayState.completedMatch) === completedSnapshotJson, "Waiting-room normalization destroyed the completed snapshot");
 
   console.log(JSON.stringify({
     ok: true,
@@ -693,7 +874,10 @@ try {
     assetReplacementVerified: availability.availableQuestions > requestedSettings.totalRounds,
     realMediaRoutesVerified: true,
     gameFinished: true,
-    playAgainReset: true,
+    playerSpecificPlayAgain: true,
+    finalSnapshotPreserved: true,
+    postMatchReconnectRestored: true,
+    nextMatchStartBlockedUntilReturn: true,
     roomSettingsPreserved: true,
     integerScoresOnly: true,
     fivePlayerCapacityVerified: true,
@@ -714,9 +898,12 @@ try {
     kickedReconnectInvalidated: true,
     preparingKickBarrierReevaluated: true,
     playingKickBarrierReevaluated: true,
+    fivePlayerPostMatchIsolationVerified: true,
+    finalResultsLeaveBarrierReevaluated: true,
+    postMatchKickBarrierReevaluated: true,
   }, null, 2));
   }
 } finally {
   activeAlpha.close();
-  bravo.close();
+  activeBravo.close();
 }

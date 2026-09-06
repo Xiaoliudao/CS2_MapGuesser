@@ -14,7 +14,9 @@ export function GameResult({
   onLeave: () => void;
   isLeaving?: boolean;
 }) {
-  if (room.failureCode === "NETWORK_ASSET_FAILURE") {
+  const completedMatch = room.completedMatch;
+  const failureCode = completedMatch?.failureCode ?? room.failureCode;
+  if (failureCode === "NETWORK_ASSET_FAILURE") {
     return (
       <section className="stage-card final-card">
         <div className="stage-kicker">MATCH PAUSED SAFELY</div>
@@ -29,7 +31,7 @@ export function GameResult({
       </section>
     );
   }
-  if (room.failureCode === "NOT_ENOUGH_PLAYERS") {
+  if (failureCode === "NOT_ENOUGH_PLAYERS") {
     return (
       <section className="stage-card final-card">
         <div className="stage-kicker">MATCH ENDED</div>
@@ -43,7 +45,10 @@ export function GameResult({
       </section>
     );
   }
-  const sorted = [...room.players].sort((a, b) => Number(b.active) - Number(a.active)
+  const resultPlayers = completedMatch?.players ?? room.players;
+  const resultSettings = completedMatch?.settings ?? room.settings;
+  const resultRound = completedMatch?.round ?? room.round;
+  const sorted = [...resultPlayers].sort((a, b) => Number(b.active) - Number(a.active)
     || integerDisplayScore(b.score) - integerDisplayScore(a.score)
     || a.slotIndex - b.slotIndex);
   const activeRanked = sorted.filter((player) => player.active);
@@ -55,7 +60,9 @@ export function GameResult({
   const tied = winners.length > 1;
   const viewerWon = winnerIds.has(playerId);
   const winnerNames = winners.map((player) => player.nickname).join(" · ");
-  const fullyCompleted = room.round >= room.settings.totalRounds;
+  const fullyCompleted = resultRound >= resultSettings.totalRounds;
+  const activeRoomPlayers = room.players.filter((player) => player.active);
+  const returnedPlayers = activeRoomPlayers.filter((player) => player.postMatchState === "returned_to_lobby");
   return (
     <section className="stage-card final-card">
       <div className="stage-kicker">MATCH COMPLETE</div>
@@ -64,6 +71,10 @@ export function GameResult({
         <span>{tied ? `${winners.length}-WAY DRAW` : viewerWon ? "VICTORY" : "WINNER"}</span>
         <strong>{winnerNames || "NO RESULT"}</strong>
         {tied && <small>{viewerWon ? "YOU SHARE THE WIN" : "TOP SCORES ARE TIED"}</small>}
+      </div>
+      <div className="post-match-return-status" role="status" aria-live="polite">
+        <span>NEXT MATCH</span>
+        <strong>{returnedPlayers.length} / {activeRoomPlayers.length} PLAYERS RETURNED TO LOBBY</strong>
       </div>
       <div className="final-scores">
         {sorted.map((player, index) => {
@@ -88,6 +99,7 @@ export function GameResult({
           {isLeaving ? "LEAVING…" : fullyCompleted ? "BACK TO HOME" : "LEAVE MATCH"}
         </button>
       </div>
+      <small className="final-play-again-note">Return to the room when you are ready. Other players can keep viewing these results.</small>
     </section>
   );
 }

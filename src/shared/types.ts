@@ -22,7 +22,10 @@ export interface Player {
 export interface PublicPlayer extends Player {
   submitted: boolean;
   assetReady: boolean;
+  postMatchState: PostMatchPlayerState | null;
 }
+
+export type PostMatchPlayerState = "viewing_results" | "returned_to_lobby";
 
 export interface PublicQuestion {
   questionId: string;
@@ -61,6 +64,24 @@ export interface RoundTiming {
   roundEndsAt: number | null;
 }
 
+export interface CompletedMatchPlayer {
+  id: string;
+  nickname: string;
+  slotIndex: number;
+  active: boolean;
+  score: number;
+}
+
+export interface CompletedMatchSnapshot {
+  matchId: string;
+  completedAt: number;
+  settings: RoomSettings;
+  players: CompletedMatchPlayer[];
+  round: number;
+  roundResult: RoundResultState | null;
+  failureCode: GameErrorCode | null;
+}
+
 export interface GameRoomState extends RoundTiming {
   roomCode: string;
   status: RoomStatus;
@@ -74,6 +95,7 @@ export interface GameRoomState extends RoundTiming {
   nextQuestion: PublicQuestion | null;
   assetPrepareAttempt: number;
   roundResult: RoundResultState | null;
+  completedMatch: CompletedMatchSnapshot | null;
   assetOrigin: string;
   failureCode: GameErrorCode | null;
   stateVersion: number;

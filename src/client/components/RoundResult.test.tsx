@@ -19,6 +19,7 @@ function publicPlayer(slotIndex: number, score: number, active = true): PublicPl
     score,
     submitted: true,
     assetReady: true,
+    postMatchState: null,
   };
 }
 
@@ -72,6 +73,7 @@ function resultRoom(): GameRoomState {
       players: [resultPlayer(0, 80), resultPlayer(1, 90), resultPlayer(2, 90), resultPlayer(3, 50), resultPlayer(4, 10)],
       nextRoundAt: 30_000,
     },
+    completedMatch: null,
     assetOrigin: "",
     failureCode: null,
     stateVersion: 8,

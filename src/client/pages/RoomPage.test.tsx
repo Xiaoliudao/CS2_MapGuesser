@@ -24,6 +24,7 @@ function player(slotIndex: number): PublicPlayer {
     score: 0,
     submitted: false,
     assetReady: false,
+    postMatchState: null,
   };
 }
 
@@ -44,11 +45,35 @@ function waitingRoom(playerCount = 2): GameRoomState {
     roundStartedAt: null,
     roundEndsAt: null,
     roundResult: null,
+    completedMatch: null,
     assetOrigin: "",
     failureCode: null,
     stateVersion: 1,
     serverNow: 1_000,
   };
+}
+
+function finishedRoom(returnedPlayerIds: string[] = []): GameRoomState {
+  const room = waitingRoom(2);
+  room.status = "finished";
+  room.round = room.settings.totalRounds;
+  room.players.forEach((candidate, index) => {
+    candidate.ready = false;
+    candidate.score = 300 - index * 100;
+    candidate.postMatchState = returnedPlayerIds.includes(candidate.id)
+      ? "returned_to_lobby"
+      : "viewing_results";
+  });
+  room.completedMatch = {
+    matchId: "match-finished",
+    completedAt: 2_000,
+    settings: { ...room.settings, mapPool: [...room.settings.mapPool], difficultyPool: [...room.settings.difficultyPool] },
+    players: room.players.map(({ id, nickname, slotIndex, active, score }) => ({ id, nickname, slotIndex, active, score })),
+    round: room.round,
+    roundResult: null,
+    failureCode: null,
+  };
+  return room;
 }
 
 const send = vi.fn(() => true);
@@ -91,6 +116,32 @@ afterEach(() => {
 });
 
 describe("RoomPage multiplayer lobby wiring", () => {
+  it("restores a returned player to the same waiting room without moving result viewers", async () => {
+    mockSocket(finishedRoom(["player-0"]));
+    render(<RoomPage roomCode="ABCDE" />);
+
+    expect(screen.getByText("WAITING ROOM")).toBeTruthy();
+    expect(screen.getByText("VIEWING RESULTS")).toBeTruthy();
+    expect(screen.getByText("WAITING FOR 1 PLAYER TO RETURN…")).toBeTruthy();
+    expect(screen.queryByText("FINAL RESULT")).toBeNull();
+    expect(screen.getByRole("button", { name: "START MATCH" }).hasAttribute("disabled")).toBe(true);
+    await userEvent.click(screen.getByRole("button", { name: "READY UP" }));
+    expect(send).toHaveBeenCalledWith({ type: "player:ready" });
+  });
+
+  it("restores a player who has not returned to the immutable final results", async () => {
+    localStorage.setItem("cs2-guesser-player-id", "player-1");
+    localStorage.setItem("cs2-guesser-nickname", "Player 2");
+    mockSocket(finishedRoom(["player-0"]));
+    render(<RoomPage roomCode="ABCDE" />);
+
+    expect(screen.getByText("FINAL RESULT")).toBeTruthy();
+    expect(screen.queryByText("WAITING ROOM")).toBeNull();
+    expect(screen.getByText("1 / 2 PLAYERS RETURNED TO LOBBY")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "PLAY AGAIN" }));
+    expect(send).toHaveBeenCalledWith({ type: "game:play-again" });
+  });
+
   it("sends the explicit game:start event when the host starts", async () => {
     mockSocket(waitingRoom(2));
     render(<RoomPage roomCode="ABCDE" />);

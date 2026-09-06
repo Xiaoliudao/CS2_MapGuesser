@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CLIENT_EVENTS, type ClientEvent } from "../../shared/protocol";
+import type { GameRoomState } from "../../shared/types";
 import { navigate, registerNavigationBlocker, type NavigationAttempt } from "../App";
 import { ConfirmLeaveDialog, type ConfirmLeaveMode } from "../components/ConfirmLeaveDialog";
 import { ConfirmKickDialog } from "../components/ConfirmKickDialog";
@@ -14,6 +15,13 @@ import { RoundPreparation } from "../components/RoundPreparation";
 import { useGameSocket } from "../hooks/useGameSocket";
 import { useRoundPreparation } from "../hooks/useRoundPreparation";
 import { getNickname, getPlayerId } from "../lib/identity";
+
+function hasFullyCompletedMatch(room: GameRoomState): boolean {
+  const completedMatch = room.completedMatch;
+  return room.status === "finished"
+    && (completedMatch?.failureCode ?? room.failureCode) === null
+    && (completedMatch?.round ?? room.round) >= (completedMatch?.settings.totalRounds ?? room.settings.totalRounds);
+}
 
 export function RoomPage({ roomCode }: { roomCode: string }) {
   const nickname = useMemo(getNickname, []);
@@ -48,6 +56,8 @@ export function RoomPage({ roomCode }: { roomCode: string }) {
   const activePlayerCount = room?.players.filter((player) => player.active).length ?? 0;
   const canInvite = room?.status === "waiting" && activePlayerCount < room.maxPlayers;
   const viewer = room?.players.find((player) => player.id === playerId);
+  const viewerReturnedToLobby = room?.status === "finished"
+    && viewer?.postMatchState === "returned_to_lobby";
   const viewerIsDnf = Boolean(room && room.status !== "waiting" && viewer?.active === false);
   const kickTarget = kickTargetId
     ? room?.players.find((player) => player.id === kickTargetId) ?? null
@@ -132,16 +142,16 @@ export function RoomPage({ roomCode }: { roomCode: string }) {
       return;
     }
 
-    const fullyCompleted = currentRoom.status === "finished"
-      && currentRoom.failureCode === null
-      && currentRoom.round >= currentRoom.settings.totalRounds;
-    if (fullyCompleted) {
+    const currentViewer = currentRoom.players.find((player) => player.id === playerId);
+    const returnedToLobby = currentRoom.status === "finished"
+      && currentViewer?.postMatchState === "returned_to_lobby";
+    if (hasFullyCompletedMatch(currentRoom) && !returnedToLobby) {
       void leaveRoom().catch(() => undefined);
       completeLeaveNavigation();
       return;
     }
 
-    const mode: ConfirmLeaveMode = currentRoom.status === "waiting" ? "room" : "match";
+    const mode: ConfirmLeaveMode = currentRoom.status === "waiting" || returnedToLobby ? "room" : "match";
     leaveModeRef.current = mode;
     setLeaveMode(mode);
   }, [completeLeaveNavigation, leaveRoom]);
@@ -162,7 +172,8 @@ export function RoomPage({ roomCode }: { roomCode: string }) {
       || currentRoom.hostPlayerId !== playerId
       || !target?.active
       || target.id === currentRoom.hostPlayerId
-      || currentRoom.status === "finished"
+      || (currentRoom.status === "finished"
+        && currentRoom.players.find((player) => player.id === playerId)?.postMatchState !== "returned_to_lobby")
     ) return;
     setKickError(null);
     setKickTargetId(targetPlayerId);
@@ -194,12 +205,10 @@ export function RoomPage({ roomCode }: { roomCode: string }) {
   if (!nickname) return null;
 
   const sendEvent = (event: ClientEvent) => send(event);
-  const fullyCompleted = room?.status === "finished"
-    && room.failureCode === null
-    && room.round >= room.settings.totalRounds;
+  const fullyCompleted = room ? hasFullyCompletedMatch(room) : false;
   const leaveActionLabel = isLeaving
     ? "LEAVING…"
-    : room?.status === "waiting"
+    : room?.status === "waiting" || viewerReturnedToLobby
       ? "LEAVE ROOM"
       : fullyCompleted
         ? "BACK TO HOME"
@@ -273,7 +282,7 @@ export function RoomPage({ roomCode }: { roomCode: string }) {
         </section>
       )}
 
-      {room?.status === "waiting" && (
+      {(room?.status === "waiting" || viewerReturnedToLobby) && (
         <Lobby
           room={room}
           playerId={playerId}
@@ -319,7 +328,7 @@ export function RoomPage({ roomCode }: { roomCode: string }) {
           kickingPlayerId={isKicking ? kickTargetId : null}
         />
       )}
-      {room?.status === "finished" && (
+      {room?.status === "finished" && !viewerReturnedToLobby && (
         <GameResult
           room={room}
           playerId={playerId}

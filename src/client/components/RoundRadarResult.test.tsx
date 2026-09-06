@@ -20,8 +20,8 @@ describe("RoundRadarResult multiplayer adapter", () => {
       ],
     };
     const players = [
-      { id: "me", nickname: "Me", slotIndex: 4, active: true, connected: true, ready: true, score: 40, submitted: true, assetReady: true },
-      { id: "them", nickname: "Rival", slotIndex: 1, active: true, connected: true, ready: true, score: 39, submitted: true, assetReady: true },
+      { id: "me", nickname: "Me", slotIndex: 4, active: true, connected: true, ready: true, score: 40, submitted: true, assetReady: true, postMatchState: null },
+      { id: "them", nickname: "Rival", slotIndex: 1, active: true, connected: true, ready: true, score: 39, submitted: true, assetReady: true, postMatchState: null },
     ];
 
     render(<RoundRadarResult result={result} playerId="me" players={players} />);

@@ -1,4 +1,4 @@
-import type { GameErrorCode, RoomStatus } from "../../shared/types";
+import type { GameErrorCode, PostMatchPlayerState, RoomStatus } from "../../shared/types";
 import { MAX_MULTIPLAYER_PLAYERS, MIN_MULTIPLAYER_PLAYERS } from "../../shared/multiplayer";
 import { normalizeScore } from "./scoring";
 
@@ -80,19 +80,50 @@ export function validateMatchStart({
   return null;
 }
 
+export function canUseNextMatchLobby(
+  status: RoomStatus,
+  postMatchState: PostMatchPlayerState | null | undefined,
+): boolean {
+  return status === "waiting"
+    || (status === "finished" && postMatchState === "returned_to_lobby");
+}
+
+export function allActivePlayersReturned(
+  players: readonly { id: string; active: boolean }[],
+  postMatchStateByPlayer: Readonly<Record<string, PostMatchPlayerState>>,
+): boolean {
+  const activePlayers = players.filter((player) => player.active);
+  return activePlayers.length > 0
+    && activePlayers.every((player) => postMatchStateByPlayer[player.id] === "returned_to_lobby");
+}
+
+export function validateReturnToLobby({
+  status,
+  playerActive,
+}: {
+  status: RoomStatus;
+  playerActive: boolean;
+}): GameErrorCode | null {
+  if (!playerActive) return "INVALID_PLAYER";
+  if (status !== "finished") return "INVALID_MESSAGE";
+  return null;
+}
+
 export function validateRoomSettingsUpdate({
   status,
   requestingPlayerId,
   hostPlayerId,
   requesterActive,
+  requesterPostMatchState,
 }: {
   status: RoomStatus;
   requestingPlayerId: string;
   hostPlayerId: string | null;
   requesterActive: boolean;
+  requesterPostMatchState?: PostMatchPlayerState | null;
 }): GameErrorCode | null {
   if (!requesterActive) return "INVALID_PLAYER";
-  if (status !== "waiting") return "GAME_ALREADY_STARTED";
+  if (!canUseNextMatchLobby(status, requesterPostMatchState)) return "GAME_ALREADY_STARTED";
   if (requestingPlayerId !== hostPlayerId) return "NOT_HOST";
   return null;
 }
@@ -108,18 +139,20 @@ export function validatePlayerKick({
   hostPlayerId,
   players,
   targetPlayerId,
+  requesterPostMatchState,
 }: {
   status: RoomStatus;
   requestingPlayerId: string;
   hostPlayerId: string | null;
   players: readonly KickablePlayerState[];
   targetPlayerId: string;
+  requesterPostMatchState?: PostMatchPlayerState | null;
 }): GameErrorCode | null {
   const requester = players.find((player) => player.id === requestingPlayerId);
   if (!requester?.active) return "INVALID_PLAYER";
   if (requestingPlayerId !== hostPlayerId) return "NOT_HOST";
   if (targetPlayerId === hostPlayerId) return "CANNOT_KICK_HOST";
-  if (status === "finished") return "KICK_NOT_ALLOWED";
+  if (status === "finished" && requesterPostMatchState !== "returned_to_lobby") return "KICK_NOT_ALLOWED";
   const target = players.find((player) => player.id === targetPlayerId);
   if (!target?.active) return "PLAYER_NOT_FOUND";
   return null;

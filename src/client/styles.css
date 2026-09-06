@@ -708,6 +708,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .room-shell .lobby-player small, .room-shell .prepare-status-list small { display: inline-block; padding: 2px 4px; color: #111; background: var(--player-color, var(--orange)); font-size: 6px; font-weight: 900; letter-spacing: .08em; }
 .room-shell .lobby-player-actions { display: flex; align-items: flex-end; flex-direction: column; gap: 7px; }
 .room-shell .lobby-player-actions b { white-space: nowrap; }
+.room-shell .lobby-player-actions b.viewing-results { color: #93a2a9; }
 .room-shell .lobby-invite-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding: 9px 11px; border: 1px dashed #3b494f; background: rgba(13,20,23,.65); }
 .room-shell .lobby-invite-row > span { color: #738087; font-size: 8px; font-weight: 800; letter-spacing: .12em; }
 .room-shell .lobby-invite-row .invite-button { flex: 0 0 auto; height: 34px; }
@@ -781,6 +782,10 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 
 .room-shell .final-card { max-width: 760px; }
 .room-shell .winner-block > small { display: block; margin-top: 9px; color: #829096; font-size: 8px; font-weight: 800; letter-spacing: .12em; }
+.room-shell .post-match-return-status { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -14px 0 20px; padding: 10px 12px; border: 1px solid #2d3a40; background: #0c1215; }
+.room-shell .post-match-return-status span { color: var(--orange); font-size: 8px; font-weight: 900; letter-spacing: .14em; }
+.room-shell .post-match-return-status strong { color: #aebbc0; font-size: 9px; letter-spacing: .08em; text-align: right; }
+.room-shell .final-play-again-note { display: block; margin-top: 10px; color: #78868c; font-size: 8px; line-height: 1.5; text-align: center; }
 .room-shell .final-scores > div { grid-template-columns: 34px 38px minmax(0, 1fr) auto; gap: 8px; padding: 12px 14px; border-left: 3px solid transparent; }
 .room-shell .final-scores > div.winner { border-left-color: var(--player-color, var(--orange)); background: rgba(255,255,255,.035); }
 .room-shell .final-scores > div.is-dnf { opacity: .7; }
@@ -810,4 +815,6 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   .round-result-leaderboard > div { grid-template-columns: 28px 32px minmax(0, 1fr) auto; padding: 10px 8px; gap: 6px; }
   .round-result-details { grid-template-columns: 1fr; }
   .room-shell .final-scores > div { grid-template-columns: 28px 34px minmax(0, 1fr) auto; padding: 11px 9px; gap: 6px; }
+  .room-shell .post-match-return-status { align-items: flex-start; flex-direction: column; }
+  .room-shell .post-match-return-status strong { text-align: left; }
 }

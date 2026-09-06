@@ -16,8 +16,8 @@ function playingRoom(roundEndsAt: number): GameRoomState {
     hostPlayerId: "player-a",
     maxPlayers: 5,
     players: [
-      { id: "player-a", nickname: "Alpha", slotIndex: 0, active: true, connected: true, ready: true, score: 0, submitted: false, assetReady: false },
-      { id: "player-b", nickname: "Bravo", slotIndex: 1, active: true, connected: true, ready: true, score: 0, submitted: false, assetReady: false },
+      { id: "player-a", nickname: "Alpha", slotIndex: 0, active: true, connected: true, ready: true, score: 0, submitted: false, assetReady: false, postMatchState: null },
+      { id: "player-b", nickname: "Bravo", slotIndex: 1, active: true, connected: true, ready: true, score: 0, submitted: false, assetReady: false, postMatchState: null },
     ],
     round: 1,
     questionCount: 10,
@@ -28,6 +28,7 @@ function playingRoom(roundEndsAt: number): GameRoomState {
     roundStartedAt: roundEndsAt - 20_000,
     roundEndsAt,
     roundResult: null,
+    completedMatch: null,
     assetOrigin: "",
     failureCode: null,
     stateVersion: 5,

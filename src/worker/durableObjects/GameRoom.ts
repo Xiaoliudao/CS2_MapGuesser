@@ -19,10 +19,12 @@ import {
 } from "../../shared/roomSettings";
 import { QuestionDifficultySchema } from "../../shared/questionDifficulty";
 import type {
+  CompletedMatchSnapshot,
   GameErrorCode,
   GameRoomState,
   MapPoint,
   PlayerRoundResult,
+  PostMatchPlayerState,
   PublicPlayer,
   RoundTiming,
   RoundResultState,
@@ -39,10 +41,12 @@ import {
   isValidAssetReport,
 } from "../game/assetPreparation";
 import {
+  allActivePlayersReturned,
   activeStateAfterReconnect,
   activeMatchPlayerIds,
   applyPlayerDeparture,
   allActivePlayersSubmitted,
+  canUseNextMatchLobby,
   canReceiveRoomBroadcast,
   lowestAvailableSlotIndex,
   scoreVisibleToViewer,
@@ -53,6 +57,7 @@ import {
   validateGuess,
   validateMatchStart,
   validatePlayerKick,
+  validateReturnToLobby,
   validateRoomSettingsUpdate,
 } from "../game/roomState";
 import { normalizeScore, scoreGuess } from "../game/scoring";
@@ -94,13 +99,14 @@ interface StoredGuess {
 }
 
 interface InternalRoomState extends RoundTiming {
-  schemaVersion: 10;
+  schemaVersion: 11;
   roomCode: string;
   status: RoomStatus;
   settings: RoomSettings;
   players: InternalPlayer[];
   hostPlayerId: string | null;
   maxPlayers: typeof MAX_MULTIPLAYER_PLAYERS;
+  currentMatchId: string | null;
   matchPlayerIds: string[];
   inactivePlayerIds: string[];
   kickedPlayerIds: string[];
@@ -115,6 +121,8 @@ interface InternalRoomState extends RoundTiming {
   guesses: Record<string, StoredGuess>;
   processedEventIds: string[];
   roundResult: RoundResultState | null;
+  completedMatch: CompletedMatchSnapshot | null;
+  postMatchStateByPlayer: Record<string, PostMatchPlayerState>;
   failureCode: GameErrorCode | null;
   stateVersion: number;
 }
@@ -124,6 +132,44 @@ type StoredRoomState = Partial<Omit<InternalRoomState, "schemaVersion" | "settin
   settings?: unknown;
   totalRounds?: unknown;
 };
+
+function cloneCompletedMatch(snapshot: CompletedMatchSnapshot): CompletedMatchSnapshot {
+  return {
+    ...snapshot,
+    settings: {
+      ...snapshot.settings,
+      mapPool: [...snapshot.settings.mapPool],
+      difficultyPool: [...snapshot.settings.difficultyPool],
+    },
+    players: snapshot.players.map((player) => ({
+      ...player,
+      score: normalizeScore(player.score),
+    })),
+    roundResult: normalizeRoundResult(snapshot.roundResult),
+  };
+}
+
+function createCompletedMatchSnapshot(state: InternalRoomState, completedAt: number): CompletedMatchSnapshot {
+  return {
+    matchId: state.currentMatchId ?? `${state.roomCode}-${state.stateVersion}`,
+    completedAt,
+    settings: {
+      ...state.settings,
+      mapPool: [...state.settings.mapPool],
+      difficultyPool: [...state.settings.difficultyPool],
+    },
+    players: state.players.map((player) => ({
+      id: player.id,
+      nickname: player.nickname,
+      slotIndex: player.slotIndex,
+      active: player.active,
+      score: normalizeScore(player.score),
+    })),
+    round: state.round,
+    roundResult: normalizeRoundResult(state.roundResult),
+    failureCode: state.failureCode,
+  };
+}
 
 function normalizeStoredGuess(guess: StoredGuess): StoredGuess {
   return {
@@ -199,14 +245,28 @@ function migrateStoredState(stored: StoredRoomState): InternalRoomState {
     && players.some((player) => player.id === stored.hostPlayerId && player.active)
     ? stored.hostPlayerId
     : null;
-  return {
-    schemaVersion: 10,
+  const settings = roomSettingsFromStorage(stored.settings, stored.totalRounds);
+  const roundResult = normalizeRoundResult(stored.roundResult);
+  const postMatchStateByPlayer = status === "finished"
+    ? Object.fromEntries(players
+      .filter((player) => player.active)
+      .map((player) => {
+        const storedState = stored.postMatchStateByPlayer?.[player.id];
+        return [
+          player.id,
+          storedState === "returned_to_lobby" ? "returned_to_lobby" : "viewing_results",
+        ];
+      })) satisfies Record<string, PostMatchPlayerState>
+    : {};
+  const migrated: InternalRoomState = {
+    schemaVersion: 11,
     roomCode: stored.roomCode ?? "UNKNOWN",
     status,
-    settings: roomSettingsFromStorage(stored.settings, stored.totalRounds),
+    settings,
     players,
     hostPlayerId: storedHostPlayerId ?? selectHostPlayerId(players),
     maxPlayers: MAX_MULTIPLAYER_PLAYERS,
+    currentMatchId: stored.currentMatchId ?? (status === "waiting" ? null : `${stored.roomCode ?? "UNKNOWN"}-${stored.stateVersion ?? 0}`),
     matchPlayerIds,
     inactivePlayerIds: migratedInactivePlayerIds,
     kickedPlayerIds: Array.from(new Set(
@@ -228,10 +288,16 @@ function migrateStoredState(stored: StoredRoomState): InternalRoomState {
       Object.entries(stored.guesses ?? {}).map(([playerId, guess]) => [playerId, normalizeStoredGuess(guess)]),
     ),
     processedEventIds: stored.processedEventIds ?? [],
-    roundResult: normalizeRoundResult(stored.roundResult),
+    roundResult,
+    completedMatch: stored.completedMatch ? cloneCompletedMatch(stored.completedMatch) : null,
+    postMatchStateByPlayer,
     failureCode: stored.failureCode ?? null,
     stateVersion: stored.stateVersion ?? 0,
   };
+  if (status === "finished" && !migrated.completedMatch) {
+    migrated.completedMatch = createCompletedMatchSnapshot(migrated, Date.now());
+  }
+  return migrated;
 }
 
 interface SocketAttachment {
@@ -250,12 +316,14 @@ export class GameRoom extends DurableObject<Env> {
       if (stored) {
         this.state = migrateStoredState(stored);
         if (
-          stored.schemaVersion !== 10
+          stored.schemaVersion !== 11
           || stored.totalRounds !== undefined
           || stored.maxPlayers !== MAX_MULTIPLAYER_PLAYERS
           || !Array.isArray(stored.matchPlayerIds)
           || !Array.isArray(stored.inactivePlayerIds)
           || !Array.isArray(stored.kickedPlayerIds)
+          || !stored.postMatchStateByPlayer
+          || typeof stored.postMatchStateByPlayer !== "object"
           || !RoomSettingsSchema.safeParse(stored.settings).success
         ) {
           this.state.stateVersion += 1;
@@ -392,7 +460,7 @@ export class GameRoom extends DurableObject<Env> {
 
     const now = Date.now();
     this.state = {
-      schemaVersion: 10,
+      schemaVersion: 11,
       roomCode: result.data,
       status: "waiting",
       settings: settings.data,
@@ -409,6 +477,7 @@ export class GameRoom extends DurableObject<Env> {
       }],
       hostPlayerId: creator.data.playerId,
       maxPlayers: MAX_MULTIPLAYER_PLAYERS,
+      currentMatchId: null,
       matchPlayerIds: [],
       inactivePlayerIds: [],
       kickedPlayerIds: [],
@@ -426,6 +495,8 @@ export class GameRoom extends DurableObject<Env> {
       guesses: {},
       processedEventIds: [],
       roundResult: null,
+      completedMatch: null,
+      postMatchStateByPlayer: {},
       failureCode: null,
       stateVersion: 1,
     };
@@ -495,7 +566,7 @@ export class GameRoom extends DurableObject<Env> {
         await this.reportAssetError(socket, player, event.payload);
         break;
       case "game:play-again":
-        await this.playAgain(socket);
+        await this.returnToLobby(socket, player);
         break;
     }
   }
@@ -561,7 +632,11 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   private async togglePlayerReady(player: InternalPlayer): Promise<void> {
-    if (!this.state || this.state.status !== "waiting" || !player.active) return;
+    if (
+      !this.state
+      || !player.active
+      || !canUseNextMatchLobby(this.state.status, this.state.postMatchStateByPlayer[player.id])
+    ) return;
     player.ready = toggledReadyState(player.ready);
     this.logGameEvent("PLAYER_READY_CHANGED", { playerId: player.id, ready: player.ready });
     await this.commit();
@@ -578,6 +653,7 @@ export class GameRoom extends DurableObject<Env> {
       requestingPlayerId: requester.id,
       hostPlayerId: this.state.hostPlayerId,
       requesterActive: requester.active,
+      requesterPostMatchState: this.state.postMatchStateByPlayer[requester.id] ?? null,
     });
     if (authorizationError) {
       this.sendError(socket, authorizationError, this.errorMessage(authorizationError));
@@ -611,6 +687,7 @@ export class GameRoom extends DurableObject<Env> {
         requestingPlayerId: requester.id,
         hostPlayerId: this.state.hostPlayerId,
         requesterActive: this.state.players.some((player) => player.id === requester.id && player.active),
+        requesterPostMatchState: this.state.postMatchStateByPlayer[requester.id] ?? null,
       });
       if (revalidationError) {
         this.sendError(socket, revalidationError, this.errorMessage(revalidationError));
@@ -672,6 +749,7 @@ export class GameRoom extends DurableObject<Env> {
       this.state.hostPlayerId = departure.hostPlayerId;
       this.state.inactivePlayerIds = departure.inactivePlayerIds;
       delete this.state.assetReady[playerId];
+      delete this.state.postMatchStateByPlayer[playerId];
       if (departure.changed) {
         this.logGameEvent("PLAYER_LEFT_INTENTIONALLY", { playerId, status: this.state.status });
         await this.reconcileAndCommit(Date.now(), true);
@@ -713,6 +791,7 @@ export class GameRoom extends DurableObject<Env> {
       hostPlayerId: this.state.hostPlayerId,
       players: this.state.players,
       targetPlayerId,
+      requesterPostMatchState: this.state.postMatchStateByPlayer[requester.id] ?? null,
     });
     if (validationError) {
       this.sendError(socket, validationError, this.errorMessage(validationError));
@@ -748,6 +827,7 @@ export class GameRoom extends DurableObject<Env> {
       this.state.inactivePlayerIds = departure.inactivePlayerIds;
       this.state.kickedPlayerIds = Array.from(new Set([...this.state.kickedPlayerIds, targetPlayerId]));
       delete this.state.assetReady[targetPlayerId];
+      delete this.state.postMatchStateByPlayer[targetPlayerId];
       delete this.state.guesses[targetPlayerId];
       if (targetGuessEventId) {
         this.state.processedEventIds = this.state.processedEventIds.filter(
@@ -846,6 +926,9 @@ export class GameRoom extends DurableObject<Env> {
         await this.commit();
         return;
       }
+      this.state.currentMatchId = crypto.randomUUID();
+      this.state.completedMatch = null;
+      this.state.postMatchStateByPlayer = {};
       this.state.matchPlayerIds = participantIds;
       this.state.inactivePlayerIds = [];
       this.state.questionSnapshot = questions;
@@ -1004,28 +1087,55 @@ export class GameRoom extends DurableObject<Env> {
     });
   }
 
-  private async playAgain(socket: WebSocket): Promise<void> {
-    if (!this.state || this.state.status !== "finished") {
-      this.sendError(socket, "INVALID_MESSAGE", "Play again is only available after the game.");
+  private async returnToLobby(socket: WebSocket, requester: InternalPlayer): Promise<void> {
+    if (!this.state) return;
+    const validationError = validateReturnToLobby({
+      status: this.state.status,
+      playerActive: requester.active,
+    });
+    if (validationError) {
+      this.sendError(socket, validationError, validationError === "INVALID_PLAYER"
+        ? "Only an active room participant can return for the next match."
+        : "Play again is only available after the game.");
       return;
     }
-    const requesterId = this.getAttachment(socket).playerId;
-    if (!requesterId || !this.state.players.some((player) => player.id === requesterId)) {
-      this.sendError(socket, "INVALID_PLAYER", "Only a room participant can start a rematch.");
+    if (this.state.postMatchStateByPlayer[requester.id] === "returned_to_lobby") {
+      this.sendState(socket);
       return;
     }
+
+    requester.ready = false;
+    this.state.postMatchStateByPlayer[requester.id] = "returned_to_lobby";
+    this.logGameEvent("PLAYER_RETURNED_TO_LOBBY", {
+      playerId: requester.id,
+      returnedPlayers: Object.values(this.state.postMatchStateByPlayer)
+        .filter((postMatchState) => postMatchState === "returned_to_lobby").length,
+    });
+    this.normalizeRematchIfComplete(Date.now());
+    await this.commit();
+  }
+
+  private normalizeRematchIfComplete(now: number): boolean {
+    if (
+      !this.state
+      || this.state.status !== "finished"
+      || !allActivePlayersReturned(this.state.players, this.state.postMatchStateByPlayer)
+    ) return false;
+
     const previousHostPlayerId = this.state.hostPlayerId;
-    const now = Date.now();
     this.state.players = this.state.players.filter((player) => shouldRetainForRematch(player, now));
     for (const player of this.state.players) {
       player.active = true;
+      player.score = 0;
       if (player.connected) player.disconnectExpiresAt = null;
     }
     this.state.hostPlayerId = this.state.players.some((player) => player.id === previousHostPlayerId)
       ? previousHostPlayerId
       : selectHostPlayerId(this.state.players);
+    this.state.currentMatchId = null;
     this.state.matchPlayerIds = [];
     this.state.inactivePlayerIds = [];
+    this.state.postMatchStateByPlayer = {};
     this.state.status = "waiting";
     this.state.round = 0;
     this.state.questionSnapshot = [];
@@ -1041,11 +1151,8 @@ export class GameRoom extends DurableObject<Env> {
     this.state.processedEventIds = [];
     this.state.roundResult = null;
     this.state.failureCode = null;
-    for (const player of this.state.players) {
-      player.ready = false;
-      player.score = 0;
-    }
-    await this.commit();
+    this.logGameEvent("ROOM_RETURNED_TO_WAITING", { players: this.state.players.length });
+    return true;
   }
 
   private beginRoundPreparation(now: number, retry: boolean): void {
@@ -1111,7 +1218,6 @@ export class GameRoom extends DurableObject<Env> {
 
   private failAssetPreparation(): void {
     if (!this.state) return;
-    this.state.status = "finished";
     this.state.currentQuestionId = null;
     this.state.prepareDeadline = null;
     this.state.assetReady = {};
@@ -1121,14 +1227,14 @@ export class GameRoom extends DurableObject<Env> {
     this.state.guesses = {};
     this.state.processedEventIds = [];
     this.state.roundResult = null;
-    this.state.failureCode = "NETWORK_ASSET_FAILURE";
+    this.finishGame("NETWORK_ASSET_FAILURE");
   }
 
   private finishRound(now: number): void {
     if (!this.state || !this.state.currentQuestionId) return;
     const question = this.currentQuestion();
     if (!question) {
-      this.finishGame();
+      this.finishGame(null, now);
       return;
     }
     const nextRoundAt = now + RESULT_DURATION_MS;
@@ -1167,7 +1273,7 @@ export class GameRoom extends DurableObject<Env> {
     };
   }
 
-  private finishGame(failureCode: GameErrorCode | null = null): void {
+  private finishGame(failureCode: GameErrorCode | null = null, completedAt = Date.now()): void {
     if (!this.state) return;
     this.state.status = "finished";
     this.state.prepareDeadline = null;
@@ -1175,6 +1281,15 @@ export class GameRoom extends DurableObject<Env> {
     this.state.roundEndsAt = null;
     this.state.resultEndsAt = null;
     this.state.failureCode = failureCode;
+    for (const player of this.state.players) player.ready = false;
+    this.state.postMatchStateByPlayer = Object.fromEntries(
+      this.state.players
+        .filter((player) => player.active)
+        .map((player) => [player.id, "viewing_results" as const]),
+    );
+    if (!this.state.completedMatch) {
+      this.state.completedMatch = createCompletedMatchSnapshot(this.state, completedAt);
+    }
   }
 
   private async reconcileAndCommit(now: number, stateAlreadyChanged = false): Promise<void> {
@@ -1200,13 +1315,16 @@ export class GameRoom extends DurableObject<Env> {
         this.state.hostPlayerId = departure.hostPlayerId;
         this.state.inactivePlayerIds = departure.inactivePlayerIds;
         delete this.state.assetReady[playerId];
+        delete this.state.postMatchStateByPlayer[playerId];
         changed = changed || departure.changed;
       }
     }
 
+    if (this.normalizeRematchIfComplete(now)) changed = true;
+
     const activePlayerIds = this.activeMatchPlayerIds();
     if (shouldFinishMatchAfterDeparture(this.state.status, activePlayerIds.length)) {
-      this.finishGame("NOT_ENOUGH_PLAYERS");
+      this.finishGame("NOT_ENOUGH_PLAYERS", now);
       changed = true;
     } else if (
       this.state.status === "round_preparing"
@@ -1241,7 +1359,7 @@ export class GameRoom extends DurableObject<Env> {
       this.state.resultEndsAt !== null &&
       now >= this.state.resultEndsAt
     ) {
-      if (this.state.round >= this.state.settings.totalRounds || this.activeMatchPlayerIds().length === 0) this.finishGame();
+      if (this.state.round >= this.state.settings.totalRounds || this.activeMatchPlayerIds().length === 0) this.finishGame(null, now);
       else {
         this.beginRoundPreparation(now, false);
         preparedRound = true;
@@ -1287,6 +1405,9 @@ export class GameRoom extends DurableObject<Env> {
         }),
         submitted: Boolean(guess),
         assetReady: state.status === "round_preparing" && state.assetReady[player.id] === true,
+        postMatchState: state.status === "finished"
+          ? state.postMatchStateByPlayer[player.id] ?? null
+          : null,
       };
     });
     return {
@@ -1315,6 +1436,7 @@ export class GameRoom extends DurableObject<Env> {
       roundStartedAt: state.roundStartedAt,
       roundEndsAt: state.roundEndsAt,
       roundResult: state.status === "round_result" || state.status === "finished" ? state.roundResult : null,
+      completedMatch: state.completedMatch ? cloneCompletedMatch(state.completedMatch) : null,
       assetOrigin,
       failureCode: state.failureCode,
       stateVersion: state.stateVersion,

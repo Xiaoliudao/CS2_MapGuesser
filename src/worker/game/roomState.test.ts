@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
+import type { PostMatchPlayerState } from "../../shared/types";
 import {
+  allActivePlayersReturned,
   activeStateAfterReconnect,
   activeMatchPlayerIds,
   applyPlayerDeparture,
   allActivePlayersSubmitted,
   allLobbyPlayersReady,
   canReceiveRoomBroadcast,
+  canUseNextMatchLobby,
   expiredPlayerDisposition,
   lowestAvailableSlotIndex,
   scoreVisibleToViewer,
@@ -16,6 +19,7 @@ import {
   validateGuess,
   validateMatchStart,
   validatePlayerKick,
+  validateReturnToLobby,
   validateRoomSettingsUpdate,
   type GuessValidationInput,
 } from "./roomState";
@@ -258,6 +262,38 @@ describe("lobby readiness", () => {
   });
 });
 
+describe("player-specific post-match return", () => {
+  it("allows only an active player in a finished match to return", () => {
+    expect(validateReturnToLobby({ status: "finished", playerActive: true })).toBeNull();
+    expect(validateReturnToLobby({ status: "finished", playerActive: false })).toBe("INVALID_PLAYER");
+    expect(validateReturnToLobby({ status: "waiting", playerActive: true })).toBe("INVALID_MESSAGE");
+  });
+
+  it.each([2, 3, 4, 5])("requires every active player in a %i-player room to return", (playerCount) => {
+    const players = Array.from({ length: playerCount }, (_, index) => ({ id: `p${index}`, active: true }));
+    const states: Record<string, PostMatchPlayerState> = Object.fromEntries(
+      players.map((player) => [player.id, "returned_to_lobby" as const]),
+    );
+    states[players.at(-1)!.id] = "viewing_results";
+    expect(allActivePlayersReturned(players, states)).toBe(false);
+    states[players.at(-1)!.id] = "returned_to_lobby";
+    expect(allActivePlayersReturned(players, states)).toBe(true);
+  });
+
+  it("ignores departed inactive players and separates waiting-room access from connection state", () => {
+    expect(allActivePlayersReturned([
+      { id: "host", active: true },
+      { id: "left", active: false },
+    ], {
+      host: "returned_to_lobby",
+      left: "viewing_results",
+    })).toBe(true);
+    expect(canUseNextMatchLobby("finished", "returned_to_lobby")).toBe(true);
+    expect(canUseNextMatchLobby("finished", "viewing_results")).toBe(false);
+    expect(canUseNextMatchLobby("waiting", null)).toBe(true);
+  });
+});
+
 describe("authoritative player departure", () => {
   it("removes a waiting host immediately and transfers host deterministically", () => {
     const players = [
@@ -425,7 +461,7 @@ describe("server-authoritative host kick validation", () => {
     },
   );
 
-  it("rejects non-host, self-target, inactive/missing target, and finished-room requests", () => {
+  it("rejects non-host, self-target, inactive/missing target, and final-result viewer requests", () => {
     const base = {
       status: "playing" as const,
       requestingPlayerId: "host",
@@ -438,6 +474,11 @@ describe("server-authoritative host kick validation", () => {
     expect(validatePlayerKick({ ...base, targetPlayerId: "dnf" })).toBe("PLAYER_NOT_FOUND");
     expect(validatePlayerKick({ ...base, targetPlayerId: "missing" })).toBe("PLAYER_NOT_FOUND");
     expect(validatePlayerKick({ ...base, status: "finished" })).toBe("KICK_NOT_ALLOWED");
+    expect(validatePlayerKick({
+      ...base,
+      status: "finished",
+      requesterPostMatchState: "returned_to_lobby",
+    })).toBeNull();
     expect(validatePlayerKick({ ...base, requestingPlayerId: "dnf" })).toBe("INVALID_PLAYER");
   });
 });
@@ -456,10 +497,23 @@ describe("server-authoritative waiting-room settings validation", () => {
     expect(validateRoomSettingsUpdate({ ...validRequest, requesterActive: false })).toBe("INVALID_PLAYER");
   });
 
-  it.each(["round_preparing", "playing", "round_result", "finished"] as const)(
+  it.each(["round_preparing", "playing", "round_result"] as const)(
     "rejects updates after the match enters %s",
     (status) => {
       expect(validateRoomSettingsUpdate({ ...validRequest, status })).toBe("GAME_ALREADY_STARTED");
     },
   );
+
+  it("allows the returned host to edit next-match settings without making final-result viewers authoritative", () => {
+    expect(validateRoomSettingsUpdate({
+      ...validRequest,
+      status: "finished",
+      requesterPostMatchState: "returned_to_lobby",
+    })).toBeNull();
+    expect(validateRoomSettingsUpdate({
+      ...validRequest,
+      status: "finished",
+      requesterPostMatchState: "viewing_results",
+    })).toBe("GAME_ALREADY_STARTED");
+  });
 });

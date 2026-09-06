@@ -18,6 +18,7 @@ function player(slotIndex: number, score: number, active = true): PublicPlayer {
     score,
     submitted: slotIndex % 2 === 0,
     assetReady: true,
+    postMatchState: null,
   };
 }
 

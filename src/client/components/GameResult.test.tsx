@@ -19,17 +19,20 @@ function player(slotIndex: number, score: number, active = true): PublicPlayer {
     score,
     submitted: true,
     assetReady: true,
+    postMatchState: "viewing_results",
   };
 }
 
 function finishedRoom(scores: number[]): GameRoomState {
+  const settings = { ...DEFAULT_ROOM_SETTINGS, mapPool: [...DEFAULT_ROOM_SETTINGS.mapPool] };
+  const players = scores.map((score, slotIndex) => player(slotIndex, score, slotIndex !== 4));
   return {
     roomCode: "ABCDE",
     status: "finished",
-    settings: { ...DEFAULT_ROOM_SETTINGS, mapPool: [...DEFAULT_ROOM_SETTINGS.mapPool] },
+    settings,
     hostPlayerId: "player-0",
     maxPlayers: 5,
-    players: scores.map((score, slotIndex) => player(slotIndex, score, slotIndex !== 4)),
+    players,
     round: 5,
     questionCount: 20,
     currentQuestion: null,
@@ -39,6 +42,15 @@ function finishedRoom(scores: number[]): GameRoomState {
     roundStartedAt: null,
     roundEndsAt: null,
     roundResult: null,
+    completedMatch: {
+      matchId: "match-1",
+      completedAt: 30_000,
+      settings,
+      players: players.map(({ id, nickname, slotIndex, active, score }) => ({ id, nickname, slotIndex, active, score })),
+      round: 5,
+      roundResult: null,
+      failureCode: null,
+    },
     assetOrigin: "",
     failureCode: null,
     stateVersion: 20,
@@ -77,6 +89,7 @@ describe("GameResult multiplayer ranking", () => {
   it("keeps early authoritative finishes as a match leave action", () => {
     const room = finishedRoom([100, 80]);
     room.round = room.settings.totalRounds - 1;
+    room.completedMatch!.round = room.completedMatch!.settings.totalRounds - 1;
     render(<GameResult room={room} playerId="player-0" onPlayAgain={vi.fn()} onLeave={vi.fn()} />);
 
     expect(screen.getByRole("button", { name: "LEAVE MATCH" })).toBeTruthy();
@@ -86,6 +99,7 @@ describe("GameResult multiplayer ranking", () => {
   it("excludes an inactive high scorer from winner selection", () => {
     const room = finishedRoom([250, 200, 999]);
     room.players[2].active = false;
+    room.completedMatch!.players[2].active = false;
     render(<GameResult room={room} playerId="player-0" onPlayAgain={vi.fn()} onLeave={vi.fn()} />);
 
     expect(screen.getByText("VICTORY")).toBeTruthy();
@@ -96,6 +110,7 @@ describe("GameResult multiplayer ranking", () => {
   it("shows a clean multiplayer-only ending when fewer than two active players remain", () => {
     const room = finishedRoom([250, 200]);
     room.failureCode = "NOT_ENOUGH_PLAYERS";
+    room.completedMatch!.failureCode = "NOT_ENOUGH_PLAYERS";
     room.players[1].active = false;
     render(<GameResult room={room} playerId="player-0" onPlayAgain={vi.fn()} onLeave={vi.fn()} />);
 
@@ -103,5 +118,20 @@ describe("GameResult multiplayer ranking", () => {
     expect(screen.getByText("NOT ENOUGH PLAYERS")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "PLAY AGAIN" })).toBeNull();
     expect(screen.getByRole("button", { name: "BACK TO HOME" })).toBeTruthy();
+  });
+
+  it("keeps standings and completed settings immutable while the next lobby changes", () => {
+    const room = finishedRoom([320, 180]);
+    room.players[0].score = 0;
+    room.players[1].score = 999;
+    room.settings.totalRounds = 10;
+    room.settings.roundDurationSeconds = 30;
+
+    render(<GameResult room={room} playerId="player-0" onPlayAgain={vi.fn()} onLeave={vi.fn()} />);
+
+    expect(screen.getByText("VICTORY")).toBeTruthy();
+    expect(screen.getByText("320")).toBeTruthy();
+    expect(screen.getByText("180")).toBeTruthy();
+    expect(screen.queryByText("999")).toBeNull();
   });
 });
