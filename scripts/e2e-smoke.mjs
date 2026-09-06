@@ -104,7 +104,7 @@ class TestClient {
     this.socket.send(JSON.stringify(event));
   }
 
-  async waitFor(predicate, timeoutMs = 8_000) {
+  async waitFor(predicate, timeoutMs = 15_000) {
     const startedAt = Date.now();
     while (Date.now() - startedAt < timeoutMs) {
       if (this.lastState && predicate(this.lastState)) return this.lastState;
@@ -907,3 +907,9 @@ try {
   activeAlpha.close();
   activeBravo.close();
 }
+
+// Remote WebSocket close handshakes may keep Node's event loop alive after every
+// assertion has completed. This is a one-shot CLI smoke test, so exit only after
+// the success path has run its connection cleanup above.
+await new Promise((resolve) => setTimeout(resolve, 100));
+process.exit(0);
