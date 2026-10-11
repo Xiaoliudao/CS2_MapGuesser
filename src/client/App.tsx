@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { HomePage } from "./pages/HomePage";
 import { InviteJoinPage } from "./pages/InviteJoinPage";
 import { RoomPage } from "./pages/RoomPage";
+import { useClientVersionGuard } from "./hooks/useClientVersionGuard";
 
 const DevQuestionEditorPage = import.meta.env.DEV
   ? lazy(() => import("./pages/QuestionEditorPage").then((module) => ({ default: module.QuestionEditorPage })))
@@ -72,6 +73,7 @@ export function navigate(path: string, options: NavigateOptions = {}): boolean {
 }
 
 export function App() {
+  useClientVersionGuard();
   const [path, setPath] = useState(currentPath);
   const committedRouteRef = useRef(currentRoute());
   const committedHistoryStateRef = useRef<unknown>(window.history.state);

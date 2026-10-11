@@ -22,6 +22,7 @@ describe("GameStageLayout", () => {
       const { container, rerender } = render(renderLayout("map"));
       const assertStableOrder = (phase: GameStagePhase) => {
         const layout = container.querySelector(".game-stage-layout");
+        expect(layout?.getAttribute("data-layout")).toBe("screenshot-left-interaction-right");
         expect(layout?.getAttribute("data-screenshot-placement")).toBe("first");
         expect(layout?.children[0]?.getAttribute("data-testid")).toBe("screenshot");
         expect(layout?.children[1]?.getAttribute("data-testid")).toBe("stage-content");

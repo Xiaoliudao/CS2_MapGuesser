@@ -11,6 +11,7 @@ import {
 } from "../shared/roomSettings";
 import { authenticateAdminRequest } from "./admin/accessAuth";
 import { handleAdminRequest } from "./admin/adminQuestions";
+import { clientVersionResponse } from "./clientVersion";
 import { GameRoom } from "./durableObjects/GameRoom";
 import { SoloSession, type SoloRpcResult } from "./durableObjects/SoloSession";
 import type { Env } from "./env";
@@ -197,6 +198,10 @@ async function questionAvailability(request: Request, env: Env): Promise<Respons
 
 export async function routeRequest(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname === "/api/client-version" && (request.method === "GET" || request.method === "HEAD")) {
+      return clientVersionResponse(request.method);
+    }
 
     if (url.pathname === "/robots.txt" && (request.method === "GET" || request.method === "HEAD")) {
       return robotsResponse();

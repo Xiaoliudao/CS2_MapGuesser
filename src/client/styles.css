@@ -890,12 +890,15 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   margin: 0 auto;
   grid-template-columns: minmax(0, 56fr) minmax(360px, 44fr);
   grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "screenshot interaction"
+    "players players";
   gap: 10px;
   align-items: stretch;
 }
-.game-stage-layout .question-workspace { grid-column: 1; grid-row: 1; }
-.game-stage-layout .guess-workspace { grid-column: 2; grid-row: 1; }
-.game-stage-layout .game-score-row { grid-column: 1 / -1; grid-row: 2; min-height: 0; }
+.game-stage-layout > .question-workspace { grid-area: screenshot; }
+.game-stage-layout > .guess-workspace { grid-area: interaction; }
+.game-stage-layout > .game-score-row { grid-area: players; min-height: 0; }
 .game-stage-layout .guess-workspace,
 .game-stage-layout .question-workspace {
   height: 100%;
@@ -1286,10 +1289,13 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
     gap: 6px;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 38fr) minmax(0, 62fr) auto;
+    grid-template-areas:
+      "screenshot"
+      "interaction"
+      "players";
   }
-  .game-stage-layout .question-workspace { grid-column: 1; grid-row: 1; padding: 5px; }
-  .game-stage-layout .guess-workspace { grid-column: 1; grid-row: 2; padding: 8px; }
-  .game-stage-layout .game-score-row { grid-column: 1; grid-row: 3; }
+  .game-stage-layout > .question-workspace { padding: 5px; }
+  .game-stage-layout > .guess-workspace { padding: 8px; }
   .game-stage-layout .round-console { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 4px; }
   .game-stage-layout .round-console > div { grid-column: auto; padding: 5px 6px; }
   .game-stage-layout .round-console span { margin-bottom: 2px; font-size: 6px; }

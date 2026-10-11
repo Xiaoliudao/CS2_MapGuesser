@@ -37,6 +37,32 @@ function playingRoom(roundEndsAt: number): GameRoomState {
 }
 
 describe("GameScreen authoritative timer", () => {
+  it.each([
+    ["host", "player-a"],
+    ["guest", "player-b"],
+  ])("uses the same screenshot-first layout for the %s through both guess stages", (_role, playerId) => {
+    const { unmount } = render(
+      <GameScreen
+        room={playingRoom(Date.now() + 20_000)}
+        playerId={playerId}
+        serverClockOffsetMs={0}
+        clockSynchronized
+        onSend={vi.fn()}
+      />,
+    );
+
+    const screenshot = screen.getByRole("img", { name: "Location screenshot to identify" });
+    const layout = document.querySelector(".multiplayer-game-layout");
+    expect(layout?.getAttribute("data-layout")).toBe("screenshot-left-interaction-right");
+    expect(layout?.firstElementChild?.classList.contains("question-workspace")).toBe(true);
+    expect(layout?.children[1]?.classList.contains("multiplayer-guess-workspace")).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: "Select Mirage" }));
+    expect(document.querySelector(".multiplayer-game-layout")?.firstElementChild?.contains(screenshot)).toBe(true);
+    expect(document.querySelector(".multiplayer-game-layout")?.children[1]?.classList.contains("is-pinpoint")).toBe(true);
+    unmount();
+  });
+
   it("waits for clock synchronization instead of showing a device-clock countdown", () => {
     render(
       <GameScreen

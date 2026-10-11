@@ -18,6 +18,7 @@ export function GameStageLayout({
   return (
     <section
       className={`game-layout-v2 game-stage-layout ${className} is-${phase}`.trim()}
+      data-layout="screenshot-left-interaction-right"
       data-screenshot-placement="first"
     >
       {screenshot}
