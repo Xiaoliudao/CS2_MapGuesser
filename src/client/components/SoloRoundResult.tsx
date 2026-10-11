@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { getMap } from "../../shared/maps";
 import { LAYER_SCORE, MAP_SCORE, MAX_LOCATION_SCORE, MAX_TIME_BONUS } from "../../shared/scoring";
 import type { SoloSessionState } from "../../shared/solo";
@@ -13,6 +14,7 @@ export function SoloRoundResult({
   busy: boolean;
   onNext: () => void;
 }) {
+  const [mobileView, setMobileView] = useState<"radar" | "photo">("radar");
   const result = session.roundResult;
   const question = session.currentQuestion;
   if (!result || !question) return null;
@@ -32,7 +34,11 @@ export function SoloRoundResult({
         <div><span>ROUND {session.round} COMPLETE</span><h2>POSITION REVEALED</h2></div>
         {result.hintUsed && <p className="solo-hint-used">HINT USED · MAP REVEALED</p>}
       </header>
-      <div className="round-result-layout">
+      <div className="solo-mobile-view-tabs solo-result-view-tabs" role="group" aria-label="Round result view">
+        <button type="button" className={mobileView === "radar" ? "is-active" : ""} aria-pressed={mobileView === "radar"} onClick={() => setMobileView("radar")}>RADAR</button>
+        <button type="button" className={mobileView === "photo" ? "is-active" : ""} aria-pressed={mobileView === "photo"} onClick={() => setMobileView("photo")}>PHOTO</button>
+      </div>
+      <div className={`round-result-layout solo-round-result-media mobile-view-${mobileView}`}>
         <ResultRadarView
           correctMapId={result.correctMapId}
           correctLayerId={result.correctLayerId}
@@ -43,21 +49,20 @@ export function SoloRoundResult({
         />
         <div className="result-question-image"><img src={question.imageUrl} alt="Round location screenshot" /></div>
       </div>
-      <div className="result-grid v2-result-grid solo-result-grid">
-        <article className="is-me">
-          <header><strong>YOUR RESULT</strong>{result.hintUsed && <small>HINT USED</small>}</header>
-          <dl>
-            <div><dt>MAP</dt><dd className={player.mapCorrect ? "correct" : "wrong"}>{guessedMap} {player.mapCorrect ? "✓" : player.submitted ? "×" : "—"}</dd></div>
-            <div><dt>MAP SCORE</dt><dd>+{formatScore(player.mapScore)} / {MAP_SCORE}</dd></div>
-            <div><dt>LAYER</dt><dd className={player.layerCorrect ? "correct" : "wrong"}>{player.layerGuess?.toUpperCase() ?? "—"} {player.layerCorrect ? "✓" : player.submitted ? "×" : ""}</dd></div>
-            <div><dt>LAYER SCORE</dt><dd>+{formatScore(player.layerScore)} / {LAYER_SCORE}</dd></div>
-            <div><dt>DISTANCE</dt><dd>{distance ?? (player.submitted ? "WRONG MAP / LAYER" : "NO GUESS")}</dd></div>
-            <div><dt>POSITION SCORE</dt><dd>+{formatScore(player.locationScore)} / {MAX_LOCATION_SCORE}</dd></div>
-            <div><dt>TIME</dt><dd>{player.elapsedMs === null ? "—" : `${(player.elapsedMs / 1000).toFixed(1)}s`}</dd></div>
-            <div><dt>TIME SCORE</dt><dd>+{formatScore(player.timeBonus ?? 0)} / {MAX_TIME_BONUS}</dd></div>
-          </dl>
-          <b className="round-points">+{formatScore(player.points)}</b>
-        </article>
+      <div className="solo-score-summary" aria-label="Your round result">
+        <div className="solo-result-facts">
+          <div><span>MAP</span><strong className={player.mapCorrect ? "correct" : "wrong"}>{guessedMap} {player.mapCorrect ? "✓" : player.submitted ? "×" : "—"}</strong></div>
+          <div><span>LAYER</span><strong className={player.layerCorrect ? "correct" : "wrong"}>{player.layerGuess?.toUpperCase() ?? "—"} {player.layerCorrect ? "✓" : player.submitted ? "×" : ""}</strong></div>
+          <div><span>DISTANCE</span><strong>{distance ?? (player.submitted ? "WRONG MAP / LAYER" : "NO GUESS")}</strong></div>
+          <div><span>TIME</span><strong>{player.elapsedMs === null ? "—" : `${(player.elapsedMs / 1000).toFixed(1)}s`}</strong></div>
+        </div>
+        <div className="solo-score-breakdown">
+          <div><span>MAP SCORE</span><strong>+{formatScore(player.mapScore)} <i>/ {MAP_SCORE}</i></strong></div>
+          <div><span>LAYER SCORE</span><strong>+{formatScore(player.layerScore)} <i>/ {LAYER_SCORE}</i></strong></div>
+          <div><span>POSITION SCORE</span><strong>+{formatScore(player.locationScore)} <i>/ {MAX_LOCATION_SCORE}</i></strong></div>
+          <div><span>TIME SCORE</span><strong>+{formatScore(player.timeBonus ?? 0)} <i>/ {MAX_TIME_BONUS}</i></strong></div>
+        </div>
+        <div className="solo-round-total"><span>ROUND SCORE</span><strong>+{formatScore(player.points)}</strong></div>
       </div>
       <div className="solo-next-action">
         <button className="primary-button" type="button" onClick={onNext} disabled={busy}>

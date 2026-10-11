@@ -18,6 +18,7 @@ export function SoloGuessPanel({
   hintMapId,
   expired,
   busy,
+  onPhaseChange,
   onHint,
   onSubmit,
 }: {
@@ -27,6 +28,7 @@ export function SoloGuessPanel({
   hintMapId: MapId | null;
   expired: boolean;
   busy: boolean;
+  onPhaseChange?: (phase: "map" | "pinpoint") => void;
   onHint: () => Promise<unknown>;
   onSubmit: (guess: SoloGuessValue) => Promise<unknown>;
 }) {
@@ -41,6 +43,10 @@ export function SoloGuessPanel({
     setPoint(null);
     setConfirmingHint(false);
   }, [questionId]);
+
+  useEffect(() => {
+    onPhaseChange?.(mapId ? "pinpoint" : "map");
+  }, [mapId, onPhaseChange]);
 
   useEffect(() => {
     if (!hintMapId) return;
@@ -60,7 +66,7 @@ export function SoloGuessPanel({
   };
 
   return (
-    <section className="guess-workspace solo-guess-workspace">
+    <section className={`guess-workspace solo-guess-workspace ${mapId ? "is-pinpoint" : "is-map-selection"}`}>
       <div className={`solo-hint ${hintMapId ? "is-revealed" : ""}`} aria-live="polite">
         {hintMapId ? (
           <div className="solo-hint-reveal">

@@ -61,6 +61,8 @@ describe("SoloPage setup", () => {
     await waitFor(() => expect(start.getAttribute("aria-disabled")).toBe("false"));
     await user.click(start);
     await waitFor(() => expect(screen.getByText("SESSION COMPLETE")).toBeTruthy());
+    expect(document.querySelector(".solo-shell")?.classList.contains("has-active-session")).toBe(true);
+    expect(document.querySelector(".solo-stage-host")).toBeTruthy();
 
     const startCall = fetchMock.mock.calls.find(([input]) => String(input) === "/api/solo");
     const availabilityCall = fetchMock.mock.calls.find(([input]) => String(input) === "/api/questions/availability");

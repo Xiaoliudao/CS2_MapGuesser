@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MAP_IDS, type MapId } from "../../shared/maps";
 import {
   QUESTION_DIFFICULTIES,
@@ -129,6 +129,7 @@ export function SoloPage() {
   const solo = useSoloSession();
   const preparation = useSoloRoundPreparation(solo.state, solo.ready);
   const [confirmingLeave, setConfirmingLeave] = useState(false);
+  const stageHostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!nicknameSchema.safeParse(nickname).success) navigate("/");
@@ -139,9 +140,20 @@ export function SoloPage() {
     solo.discard();
     navigate("/");
   };
+  const activeStatus = solo.state?.status ?? "setup";
+
+  useEffect(() => {
+    const stageHost = stageHostRef.current;
+    if (!stageHost) return;
+    if (typeof stageHost.scrollTo === "function") stageHost.scrollTo({ top: 0, left: 0 });
+    else {
+      stageHost.scrollTop = 0;
+      stageHost.scrollLeft = 0;
+    }
+  }, [activeStatus, solo.state?.round]);
 
   return (
-    <main className="room-shell solo-shell">
+    <main className={`room-shell solo-shell ${solo.state ? "has-active-session" : "is-setup"} solo-status-${activeStatus}`}>
       <header className="room-header solo-header">
         <button className="wordmark" type="button" onClick={() => solo.state ? setConfirmingLeave(true) : navigate("/")}>CS2 <span>MG</span></button>
         <div className="solo-header-status">
@@ -171,46 +183,48 @@ export function SoloPage() {
         </section>
       )}
 
-      {solo.restoring && !solo.state && (
-        <section className="loading-room">
-          <div className="spinner" />
-          <h2>RESTORING SESSION</h2>
-          <p>Syncing the authoritative solo round…</p>
-        </section>
-      )}
+      <div className="solo-stage-host" ref={stageHostRef}>
+        {solo.restoring && !solo.state && (
+          <section className="loading-room">
+            <div className="spinner" />
+            <h2>RESTORING SESSION</h2>
+            <p>Syncing the authoritative solo round…</p>
+          </section>
+        )}
 
-      {!solo.restoring && !solo.state && (
-        <SoloSetup nickname={nickname} busy={solo.busyAction === "start"} onStart={(settings) => solo.start(nickname, settings)} />
-      )}
+        {!solo.restoring && !solo.state && (
+          <SoloSetup nickname={nickname} busy={solo.busyAction === "start"} onStart={(settings) => solo.start(nickname, settings)} />
+        )}
 
-      {solo.state?.status === "round_preparing" && (
-        <SoloRoundPreparation session={solo.state} loadState={preparation.loadState} errorReason={preparation.errorReason} onRetry={preparation.retry} />
-      )}
+        {solo.state?.status === "round_preparing" && (
+          <SoloRoundPreparation session={solo.state} loadState={preparation.loadState} errorReason={preparation.errorReason} onRetry={preparation.retry} />
+        )}
 
-      {solo.state?.status === "playing" && (
-        <SoloGameScreen
-          session={solo.state}
-          busyAction={solo.busyAction}
-          serverClockOffsetMs={solo.serverClockOffsetMs}
-          clockSynchronized={solo.clockSynchronized}
-          onHint={() => solo.requestHint(solo.state!.round)}
-          onSubmit={(guess) => solo.submitGuess({ round: solo.state!.round, ...guess })}
-          onRefresh={solo.refresh}
-        />
-      )}
+        {solo.state?.status === "playing" && (
+          <SoloGameScreen
+            session={solo.state}
+            busyAction={solo.busyAction}
+            serverClockOffsetMs={solo.serverClockOffsetMs}
+            clockSynchronized={solo.clockSynchronized}
+            onHint={() => solo.requestHint(solo.state!.round)}
+            onSubmit={(guess) => solo.submitGuess({ round: solo.state!.round, ...guess })}
+            onRefresh={solo.refresh}
+          />
+        )}
 
-      {solo.state?.status === "round_result" && (
-        <SoloRoundResult session={solo.state} busy={solo.busyAction === "next"} onNext={() => void solo.nextRound(solo.state!.round)} />
-      )}
+        {solo.state?.status === "round_result" && (
+          <SoloRoundResult session={solo.state} busy={solo.busyAction === "next"} onNext={() => void solo.nextRound(solo.state!.round)} />
+        )}
 
-      {solo.state?.status === "finished" && (
-        <SoloGameResult
-          session={solo.state}
-          busy={solo.busyAction === "play-again"}
-          onPlayAgain={() => void solo.playAgain()}
-          onHome={leave}
-        />
-      )}
+        {solo.state?.status === "finished" && (
+          <SoloGameResult
+            session={solo.state}
+            busy={solo.busyAction === "play-again"}
+            onPlayAgain={() => void solo.playAgain()}
+            onHome={leave}
+          />
+        )}
+      </div>
     </main>
   );
 }

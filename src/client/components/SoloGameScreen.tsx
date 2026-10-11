@@ -27,6 +27,8 @@ export function SoloGameScreen({
 }) {
   const question = session.currentQuestion;
   const [imageLoaded, setImageLoaded] = useState(() => question ? isImagePreloaded(question.imageUrl) : false);
+  const [guessPhase, setGuessPhase] = useState<"map" | "pinpoint">("map");
+  const [mobileView, setMobileView] = useState<"radar" | "photo">("radar");
   const remainingMs = useAuthoritativeCountdown({
     status: session.status,
     roundEndsAt: session.roundEndsAt,
@@ -35,7 +37,11 @@ export function SoloGameScreen({
   });
   const expired = remainingMs !== null && remainingMs <= 0;
 
-  useEffect(() => setImageLoaded(question ? isImagePreloaded(question.imageUrl) : false), [question?.imageUrl]);
+  useEffect(() => {
+    setImageLoaded(question ? isImagePreloaded(question.imageUrl) : false);
+    setGuessPhase("map");
+    setMobileView("radar");
+  }, [question?.imageUrl, question?.questionId]);
   useEffect(() => {
     if (!expired) return;
     let cancelled = false;
@@ -53,7 +59,13 @@ export function SoloGameScreen({
 
   if (!question) return null;
   return (
-    <section className="game-layout-v2 solo-game-layout">
+    <section className={`game-layout-v2 solo-game-layout is-${guessPhase} mobile-view-${mobileView}`}>
+      {guessPhase === "pinpoint" && (
+        <div className="solo-mobile-view-tabs" role="group" aria-label="Solo game view">
+          <button type="button" className={mobileView === "radar" ? "is-active" : ""} aria-pressed={mobileView === "radar"} onClick={() => setMobileView("radar")}>RADAR</button>
+          <button type="button" className={mobileView === "photo" ? "is-active" : ""} aria-pressed={mobileView === "photo"} onClick={() => setMobileView("photo")}>PHOTO</button>
+        </div>
+      )}
       <SoloGuessPanel
         questionId={question.questionId}
         mapPool={session.settings.mapPool}
@@ -61,6 +73,7 @@ export function SoloGameScreen({
         hintMapId={session.hintMapId}
         expired={expired}
         busy={busyAction === "hint" || busyAction === "guess"}
+        onPhaseChange={setGuessPhase}
         onHint={onHint}
         onSubmit={onSubmit}
       />

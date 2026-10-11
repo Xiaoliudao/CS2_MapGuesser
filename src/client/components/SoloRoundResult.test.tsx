@@ -69,5 +69,15 @@ describe("SoloRoundResult", () => {
     expect(screen.getByText("Y You")).toBeTruthy();
     expect(screen.queryByText(/Opponent/i)).toBeNull();
     expect(screen.getAllByText(/HINT USED/).length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Your round result")).toBeTruthy();
+    for (const label of ["MAP", "LAYER", "DISTANCE", "TIME", "MAP SCORE", "LAYER SCORE", "POSITION SCORE", "TIME SCORE", "ROUND SCORE"]) {
+      expect(screen.getByText(label)).toBeTruthy();
+    }
+    const radarTab = screen.getByRole("button", { name: "RADAR" });
+    const photoTab = screen.getByRole("button", { name: "PHOTO" });
+    expect(radarTab.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(photoTab);
+    expect(photoTab.getAttribute("aria-pressed")).toBe("true");
+    expect(document.querySelector(".solo-round-result-media")?.classList.contains("mobile-view-photo")).toBe(true);
   });
 });
