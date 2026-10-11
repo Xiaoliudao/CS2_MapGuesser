@@ -38,6 +38,8 @@ describe("SoloGuessPanel hint", () => {
 
     await waitFor(() => expect(phaseChanged).toHaveBeenLastCalledWith("map"));
     expect(document.querySelector(".solo-guess-workspace")?.classList.contains("is-map-selection")).toBe(true);
+    expect(screen.getByText("WHICH MAP IS THIS LOCATION ON?")).toBeTruthy();
+    expect(screen.getByText("First choose the correct map, then pinpoint the exact location in the next step.")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: /HINT/ }));
     expect(screen.getByText("Reveal the correct map?")).toBeTruthy();
@@ -47,6 +49,8 @@ describe("SoloGuessPanel hint", () => {
     expect(screen.getByText("THIS LOCATION IS ON NUKE")).toBeTruthy();
     expect(screen.getByRole("button", { name: "UPPER" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "LOWER" })).toBeTruthy();
+    expect(screen.getByText("STEP 2 · PINPOINT LOCATION")).toBeTruthy();
+    expect(screen.getByText("Now place your marker on the 2D radar to mark the exact spot.")).toBeTruthy();
     expect(phaseChanged).toHaveBeenLastCalledWith("pinpoint");
     expect(document.querySelector(".solo-guess-workspace")?.classList.contains("is-pinpoint")).toBe(true);
     expect(screen.queryByRole("img", { name: "Correct answer point" })).toBeNull();

@@ -93,5 +93,6 @@ describe("RoundResult multiplayer summary", () => {
     expect(document.querySelectorAll(".round-result-details details")).toHaveLength(5);
     expect(document.querySelector(".round-result-details details.is-me")?.hasAttribute("open")).toBe(true);
     expect(document.querySelector(".round-result-leaderboard .is-dnf")).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Round location screenshot" }).closest(".question-image-panel")?.getAttribute("data-image-fit")).toBe("contain");
   });
 });

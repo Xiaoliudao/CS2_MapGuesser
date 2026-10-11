@@ -4,6 +4,7 @@ import type { GameRoomState } from "../../shared/types";
 import { formatScore } from "../lib/formatScore";
 import { RoundRadarResult } from "./RoundRadarResult";
 import { HostKickButton } from "./HostKickButton";
+import { QuestionImagePanel } from "./QuestionImagePanel";
 
 export function RoundResult({
   room,
@@ -42,7 +43,7 @@ export function RoundResult({
       </header>
       <div className="round-result-layout">
         <RoundRadarResult result={result} playerId={playerId} players={room.players} assetOrigin={room.assetOrigin} />
-        <div className="result-question-image"><img src={question.imageUrl} alt="Round location screenshot" /></div>
+        <QuestionImagePanel className="result-question-image" src={question.imageUrl} alt="Round location screenshot" />
       </div>
       <div className="round-result-leaderboard" aria-label="Round leaderboard">
         {rankedPlayers.map(({ player, roomPlayer, slotIndex, active, totalScore }, index) => {

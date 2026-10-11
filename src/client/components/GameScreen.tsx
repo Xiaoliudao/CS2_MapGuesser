@@ -3,6 +3,7 @@ import type { ClientEvent } from "../../shared/protocol";
 import type { GameRoomState } from "../../shared/types";
 import { GuessPanel } from "./GuessPanel";
 import { PlayerStrip } from "./PlayerStrip";
+import { QuestionImagePanel } from "./QuestionImagePanel";
 import { isImagePreloaded } from "../lib/preloadImage";
 import { useAuthoritativeCountdown } from "../hooks/useAuthoritativeCountdown";
 
@@ -51,16 +52,14 @@ export function GameScreen({
       />
 
       <section className="question-workspace">
-        <div className="question-frame-v2">
-          {!imageLoaded && <div className="image-skeleton"><span>LOADING INTEL…</span></div>}
-          <img
-            src={question.imageUrl}
-            alt="Location screenshot to identify"
-            onLoad={() => setImageLoaded(true)}
-            style={{ opacity: imageLoaded ? 1 : 0 }}
-          />
-          <div className="scanline" />
-        </div>
+        <QuestionImagePanel
+          className="question-frame-v2"
+          src={question.imageUrl}
+          alt="Location screenshot to identify"
+          loading={!imageLoaded}
+          showScanline
+          onLoad={() => setImageLoaded(true)}
+        />
         <div className="round-console">
           <div><span>ROUND</span><strong>{room.round} <i>/ {room.settings.totalRounds}</i></strong></div>
           <div className={remainingMs !== null && remainingMs <= 5_000 ? "urgent" : ""}>

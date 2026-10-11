@@ -19,7 +19,7 @@ export function MapSelector({
   return (
     <div className="map-selector" aria-label="Choose a map">
       {mapsForPool(mapPool).map((map) => (
-        <button key={map.id} type="button" onClick={() => onSelect(map.id)} disabled={disabled}>
+        <button key={map.id} type="button" aria-label={`Select ${map.name}`} onClick={() => onSelect(map.id)} disabled={disabled}>
           <img src={radarMediaUrl(map.id, map.layers[0].id, assetOrigin)} alt="" />
           <span>{map.name}</span>
         </button>

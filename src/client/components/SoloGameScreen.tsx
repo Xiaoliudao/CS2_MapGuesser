@@ -6,6 +6,7 @@ import { useAuthoritativeCountdown } from "../hooks/useAuthoritativeCountdown";
 import { isImagePreloaded } from "../lib/preloadImage";
 import { formatScore } from "../lib/formatScore";
 import type { SoloActionName } from "../hooks/useSoloSession";
+import { QuestionImagePanel } from "./QuestionImagePanel";
 import { SoloGuessPanel } from "./SoloGuessPanel";
 
 export function SoloGameScreen({
@@ -79,11 +80,14 @@ export function SoloGameScreen({
       />
 
       <section className="question-workspace">
-        <div className="question-frame-v2">
-          {!imageLoaded && <div className="image-skeleton"><span>LOADING INTEL…</span></div>}
-          <img src={question.imageUrl} alt="Location screenshot to identify" onLoad={() => setImageLoaded(true)} style={{ opacity: imageLoaded ? 1 : 0 }} />
-          <div className="scanline" />
-        </div>
+        <QuestionImagePanel
+          className="question-frame-v2"
+          src={question.imageUrl}
+          alt="Location screenshot to identify"
+          loading={!imageLoaded}
+          showScanline
+          onLoad={() => setImageLoaded(true)}
+        />
         <div className="round-console">
           <div><span>ROUND</span><strong>{session.round} <i>/ {session.settings.totalRounds}</i></strong></div>
           <div className={remainingMs !== null && remainingMs <= 5_000 ? "urgent" : ""}>

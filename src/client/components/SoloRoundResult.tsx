@@ -3,6 +3,7 @@ import { getMap } from "../../shared/maps";
 import { LAYER_SCORE, MAP_SCORE, MAX_LOCATION_SCORE, MAX_TIME_BONUS } from "../../shared/scoring";
 import type { SoloSessionState } from "../../shared/solo";
 import { formatScore } from "../lib/formatScore";
+import { QuestionImagePanel } from "./QuestionImagePanel";
 import { ResultRadarView, type ResultRadarMarker } from "./RoundRadarResult";
 
 export function SoloRoundResult({
@@ -47,7 +48,7 @@ export function SoloRoundResult({
           legend={["✓ Correct", "Y You"]}
           assetOrigin={session.assetOrigin}
         />
-        <div className="result-question-image"><img src={question.imageUrl} alt="Round location screenshot" /></div>
+        <QuestionImagePanel className="result-question-image" src={question.imageUrl} alt="Round location screenshot" />
       </div>
       <div className="solo-score-summary" aria-label="Your round result">
         <div className="solo-result-facts">

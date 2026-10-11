@@ -399,25 +399,37 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   border: 1px solid var(--line);
 }
 .guess-workspace { padding: clamp(22px, 3vw, 36px); }
-.panel-kicker, .radar-title > span {
+.panel-kicker, .radar-title > span, .radar-step-copy > span {
   display: block; color: var(--orange-bright); font-size: 9px; font-weight: 800; letter-spacing: .17em;
 }
-.guess-workspace > h2 { margin: 9px 0 5px; font-size: clamp(30px, 4vw, 44px); line-height: 1; }
-.guess-workspace > p { color: var(--muted); margin: 0 0 22px; font-size: 12px; }
+.map-selection-heading { margin: 0 0 18px; }
+.map-selection-heading h2 { margin: 9px 0 7px; font-size: clamp(31px, 4vw, 46px); line-height: .98; }
+.map-selection-heading p { max-width: 620px; margin: 0; color: #a7b1b5; font-size: 12px; line-height: 1.45; }
 .map-selector { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
 .map-selector button {
   position: relative; min-height: 112px; padding: 0; overflow: hidden; color: white; background: #0a0f11;
-  border: 1px solid #334047; transition: border-color .15s, transform .15s, filter .15s;
+  border: 1px solid #334047; transition: border-color .15s, transform .15s, filter .15s, box-shadow .15s, background .15s;
 }
-.map-selector button::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 15%, rgba(5,8,9,.92)); }
-.map-selector button img { width: 100%; height: 100%; object-fit: cover; opacity: .58; filter: saturate(.6); }
-.map-selector button span { position: absolute; z-index: 1; left: 10px; right: 10px; bottom: 10px; font: 800 16px/1 "Arial Narrow", sans-serif; letter-spacing: .08em; }
-.map-selector button:not(:disabled):hover { border-color: var(--orange); transform: translateY(-2px); }
-.map-selector button:not(:disabled):hover img { filter: saturate(1); opacity: .8; }
+.map-selector button::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 30%, rgba(5,8,9,.96)); }
+.map-selector button img { width: 100%; height: 100%; object-fit: contain; object-position: center; opacity: .66; filter: saturate(.62); }
+.map-selector button span {
+  position: absolute; z-index: 1; right: 8px; bottom: 9px; left: 8px; display: flex; min-height: 28px;
+  align-items: center; justify-content: center; text-align: center; font: 900 18px/1 "Arial Narrow", sans-serif;
+  letter-spacing: .08em; text-shadow: 0 2px 8px #000;
+}
+.map-selector button:not(:disabled):hover,
+.map-selector button:not(:disabled):focus-visible {
+  border-color: var(--orange); background: #111619; box-shadow: inset 0 0 0 1px rgba(255,107,44,.45), 0 0 18px rgba(255,107,44,.16); transform: translateY(-2px); outline: none;
+}
+.map-selector button:not(:disabled):hover img,
+.map-selector button:not(:disabled):focus-visible img { filter: saturate(1); opacity: .9; }
+.map-selector button:not(:disabled):active { border-color: var(--orange-bright); background: rgba(255,107,44,.17); transform: translateY(0); }
 .change-map-button { padding: 0; color: #98a4a9; background: none; border: 0; font-size: 9px; font-weight: 800; letter-spacing: .15em; }
 .change-map-button:hover { color: var(--orange-bright); }
 .radar-title { display: flex; align-items: end; justify-content: space-between; gap: 10px; margin: 14px 0 10px; }
 .radar-title strong { font: 900 clamp(24px, 3vw, 34px)/1 "Arial Narrow", sans-serif; text-transform: uppercase; }
+.radar-step-copy { min-width: 0; }
+.radar-step-copy small { display: block; max-width: 500px; margin-top: 5px; color: #9ba7ac; font-size: 10px; line-height: 1.35; letter-spacing: .02em; }
 .layer-tabs { display: flex; gap: 8px; max-width: 660px; margin: 0 auto 10px; }
 .layer-tabs button { flex: 1; padding: 9px; border: 1px solid #3a484e; color: #8f9da3; background: #0a0f11; font-weight: 800; letter-spacing: .14em; }
 .layer-tabs button.is-active { border-color: var(--orange); color: white; background: rgba(255,107,44,.14); }
@@ -448,8 +460,12 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .confirm-guess { margin-top: 14px; }
 
 .question-workspace { display: flex; flex-direction: column; padding: 12px; }
-.question-frame-v2 { position: relative; min-height: 360px; flex: 1; display: grid; place-items: center; overflow: hidden; background: #050708; border: 1px solid #303b41; }
-.question-frame-v2 > img { width: 100%; height: 100%; max-height: 650px; object-fit: contain; transition: opacity .2s; }
+.question-image-panel { position: relative; min-width: 0; min-height: 0; display: grid; place-items: center; overflow: hidden; background: #050708; }
+.question-image-panel-image {
+  display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%;
+  object-fit: contain; object-position: center; transition: opacity .2s;
+}
+.question-frame-v2 { min-height: 360px; flex: 1; border: 1px solid #303b41; }
 .round-console { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 10px; background: #29353a; border: 1px solid #29353a; }
 .round-console > div { min-width: 0; padding: 12px; background: #0d1417; }
 .round-console span { display: block; color: #728087; font-size: 7px; font-weight: 700; letter-spacing: .15em; margin-bottom: 5px; }
@@ -474,7 +490,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .other-player-point { color: #86dff1; z-index: 4; }.other-player-point .radar-marker-visual { border-style: dashed; box-shadow: 0 0 0 1px rgba(0,0,0,.72), 0 0 7px rgba(39,141,163,.5); }
 .marker-legend { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; margin-top: 12px; color: #929da2; font-size: 9px; font-weight: 700; letter-spacing: .08em; }
 .result-question-image { display: grid; place-items: center; }
-.result-question-image img { display: block; width: 100%; height: 100%; max-height: 620px; object-fit: contain; }
+.result-question-image .question-image-panel-image { max-height: 620px; }
 .v2-result-grid { margin-top: 14px; }
 
 .editor-page { min-height: 100vh; padding: 40px; background: #090d0f; }
@@ -892,7 +908,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 }
 .solo-game-layout .question-workspace { padding: 8px; }
 .solo-game-layout .question-frame-v2 { min-height: 0; }
-.solo-game-layout .question-frame-v2 > img { max-height: none; object-fit: contain; }
+.solo-game-layout .question-frame-v2 .question-image-panel-image { max-height: 100%; }
 .solo-game-layout .round-console { flex: 0 0 auto; margin-top: 7px; }
 .solo-game-layout .round-console > div { padding: 8px 9px; }
 .solo-game-layout .round-console span { margin-bottom: 3px; }
@@ -908,10 +924,11 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .solo-guess-workspace .solo-hint-reveal { min-height: 40px; padding-block: 6px; }
 .solo-guess-workspace.is-map-selection {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
-.solo-guess-workspace.is-map-selection > h2 { margin: 5px 0 2px; font-size: clamp(24px, 3vw, 38px); }
-.solo-guess-workspace.is-map-selection > p { margin: 0 0 8px; font-size: 10px; }
+.solo-guess-workspace.is-map-selection .map-selection-heading { margin-bottom: 8px; }
+.solo-guess-workspace.is-map-selection .map-selection-heading h2 { margin: 5px 0 4px; font-size: clamp(24px, 3vw, 38px); }
+.solo-guess-workspace.is-map-selection .map-selection-heading p { font-size: 10px; line-height: 1.35; }
 .solo-guess-workspace.is-map-selection .map-selector {
   min-height: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -919,7 +936,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   gap: 6px;
 }
 .solo-guess-workspace.is-map-selection .map-selector button { min-height: 0; }
-.solo-guess-workspace.is-map-selection .map-selector button span { bottom: 7px; font-size: 14px; }
+.solo-guess-workspace.is-map-selection .map-selector button span { bottom: 6px; min-height: 24px; font-size: 16px; }
 .solo-guess-workspace.is-pinpoint {
   display: flex;
   min-height: 0;
@@ -928,6 +945,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .solo-guess-workspace.is-pinpoint .change-map-button { flex: 0 0 auto; align-self: flex-start; }
 .solo-guess-workspace.is-pinpoint .radar-title { flex: 0 0 auto; margin: 7px 0 6px; }
 .solo-guess-workspace.is-pinpoint .radar-title strong { font-size: clamp(22px, 2.5vw, 30px); }
+.solo-guess-workspace.is-pinpoint .radar-step-copy small { max-width: 380px; margin-top: 3px; font-size: 8px; }
 .solo-guess-workspace.is-pinpoint .layer-tabs { flex: 0 0 auto; margin-bottom: 6px; }
 .solo-guess-workspace.is-pinpoint .layer-tabs button { min-height: 34px; padding: 5px; }
 .solo-guess-workspace.is-pinpoint .radar-picker {
@@ -1004,7 +1022,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   aspect-ratio: 1;
 }
 .solo-round-result-media .marker-legend { flex: 0 0 auto; margin-top: 5px; }
-.solo-round-result-media .result-question-image img { max-height: none; object-fit: contain; }
+.solo-round-result-media .result-question-image .question-image-panel-image { max-height: 100%; }
 .solo-score-summary {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.2fr) auto;
@@ -1120,15 +1138,16 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   .solo-guess-workspace .solo-hint-button { padding-inline: 9px; }
   .solo-guess-workspace .solo-hint-reveal { padding: 5px 8px; }
   .solo-guess-workspace .solo-hint-reveal strong { margin-top: 3px; font-size: 12px; }
-  .solo-guess-workspace.is-map-selection > h2 { margin-top: 3px; font-size: 20px; }
-  .solo-guess-workspace.is-map-selection > p { margin-bottom: 5px; font-size: 8px; }
+  .solo-guess-workspace.is-map-selection .map-selection-heading { margin-bottom: 5px; }
+  .solo-guess-workspace.is-map-selection .map-selection-heading h2 { margin: 3px 0; font-size: 20px; }
+  .solo-guess-workspace.is-map-selection .map-selection-heading p { font-size: 8px; line-height: 1.25; }
   .solo-guess-workspace.is-map-selection .map-selector {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: repeat(4, minmax(38px, 1fr));
     gap: 4px;
   }
   .solo-guess-workspace.is-map-selection .map-selector button { min-height: 0; }
-  .solo-guess-workspace.is-map-selection .map-selector button span { bottom: 5px; font-size: 12px; }
+  .solo-guess-workspace.is-map-selection .map-selector button span { bottom: 4px; min-height: 20px; font-size: 14px; }
   .solo-game-layout.is-pinpoint {
     position: relative;
     grid-template-columns: minmax(0, 1fr);
@@ -1184,6 +1203,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   .solo-game-layout.is-pinpoint .question-workspace .round-console { display: none; }
   .solo-guess-workspace.is-pinpoint .radar-title { margin-block: 4px; }
   .solo-guess-workspace.is-pinpoint .radar-title strong { font-size: 20px; }
+  .solo-guess-workspace.is-pinpoint .radar-step-copy small { max-width: 230px; margin-top: 2px; font-size: 7px; }
   .solo-guess-workspace.is-pinpoint .layer-tabs { margin-bottom: 4px; }
   .solo-guess-workspace.is-pinpoint .layer-tabs button { min-height: 30px; font-size: 8px; }
   .solo-guess-workspace.is-pinpoint .confirm-guess { min-height: 46px; margin-top: 5px; }

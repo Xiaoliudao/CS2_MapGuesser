@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_ROOM_SETTINGS } from "../../shared/roomSettings";
 import type { GameRoomState } from "../../shared/types";
@@ -50,6 +50,13 @@ describe("GameScreen authoritative timer", () => {
 
     expect(screen.getByText("SYNCING…")).toBeTruthy();
     expect(screen.queryByText(/30\.\d/)).toBeNull();
+    expect(screen.getByText("WHICH MAP IS THIS LOCATION ON?")).toBeTruthy();
+    expect(screen.getByText("First choose the correct map, then pinpoint the exact location in the next step.")).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Location screenshot to identify" }).closest(".question-image-panel")?.getAttribute("data-image-fit")).toBe("contain");
+
+    fireEvent.click(screen.getByRole("button", { name: "Select Mirage" }));
+    expect(screen.getByText("STEP 2 · PINPOINT LOCATION")).toBeTruthy();
+    expect(screen.getByText("Now place your marker on the 2D radar to mark the exact spot.")).toBeTruthy();
   });
 
   it("stays on the playing screen at zero and waits for the server result", async () => {

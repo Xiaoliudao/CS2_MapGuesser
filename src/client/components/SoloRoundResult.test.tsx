@@ -79,5 +79,6 @@ describe("SoloRoundResult", () => {
     fireEvent.click(photoTab);
     expect(photoTab.getAttribute("aria-pressed")).toBe("true");
     expect(document.querySelector(".solo-round-result-media")?.classList.contains("mobile-view-photo")).toBe(true);
+    expect(screen.getByRole("img", { name: "Round location screenshot" }).closest(".question-image-panel")?.getAttribute("data-image-fit")).toBe("contain");
   });
 });

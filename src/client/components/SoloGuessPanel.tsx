@@ -90,15 +90,23 @@ export function SoloGuessPanel({
 
       {!mapId ? (
         <>
-          <div className="panel-kicker">STEP 1 · SELECT MAP</div>
-          <h2>WHERE IS THIS LOCATION?</h2>
-          <p>Choose the battleground, then pinpoint the exact position.</p>
+          <div className="map-selection-heading">
+            <div className="panel-kicker">STEP 1 · SELECT MAP</div>
+            <h2>WHICH MAP IS THIS LOCATION ON?</h2>
+            <p>First choose the correct map, then pinpoint the exact location in the next step.</p>
+          </div>
           <MapSelector mapPool={mapPool} assetOrigin={assetOrigin} onSelect={selectMap} disabled={disabled} />
         </>
       ) : (
         <>
           <button className="change-map-button" type="button" onClick={() => { setMapId(null); setLayerId("main"); setPoint(null); }} disabled={disabled}>← CHANGE MAP</button>
-          <div className="radar-title"><span>STEP 2 · PINPOINT</span><strong>{getMap(mapId).name}</strong></div>
+          <div className="radar-title">
+            <div className="radar-step-copy">
+              <span>STEP 2 · PINPOINT LOCATION</span>
+              <small>Now place your marker on the 2D radar to mark the exact spot.</small>
+            </div>
+            <strong>{getMap(mapId).name}</strong>
+          </div>
           {getMap(mapId).layers.length > 1 && (
             <div className="layer-tabs" role="group" aria-label="Radar floor">
               {getMap(mapId).layers.map((layer) => (
