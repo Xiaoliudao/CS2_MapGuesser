@@ -15,7 +15,7 @@ export function SoloRoundResult({
   busy: boolean;
   onNext: () => void;
 }) {
-  const [mobileView, setMobileView] = useState<"radar" | "photo">("radar");
+  const [mobileView, setMobileView] = useState<"photo" | "radar">("photo");
   const result = session.roundResult;
   const question = session.currentQuestion;
   if (!result || !question) return null;
@@ -36,10 +36,11 @@ export function SoloRoundResult({
         {result.hintUsed && <p className="solo-hint-used">HINT USED · MAP REVEALED</p>}
       </header>
       <div className="solo-mobile-view-tabs solo-result-view-tabs" role="group" aria-label="Round result view">
-        <button type="button" className={mobileView === "radar" ? "is-active" : ""} aria-pressed={mobileView === "radar"} onClick={() => setMobileView("radar")}>RADAR</button>
         <button type="button" className={mobileView === "photo" ? "is-active" : ""} aria-pressed={mobileView === "photo"} onClick={() => setMobileView("photo")}>PHOTO</button>
+        <button type="button" className={mobileView === "radar" ? "is-active" : ""} aria-pressed={mobileView === "radar"} onClick={() => setMobileView("radar")}>RADAR</button>
       </div>
-      <div className={`round-result-layout solo-round-result-media mobile-view-${mobileView}`}>
+      <div className={`round-result-layout solo-round-result-media mobile-view-${mobileView}`} data-screenshot-placement="first">
+        <QuestionImagePanel className="result-question-image" src={question.imageUrl} alt="Round location screenshot" />
         <ResultRadarView
           correctMapId={result.correctMapId}
           correctLayerId={result.correctLayerId}
@@ -48,7 +49,6 @@ export function SoloRoundResult({
           legend={["✓ Correct", "Y You"]}
           assetOrigin={session.assetOrigin}
         />
-        <QuestionImagePanel className="result-question-image" src={question.imageUrl} alt="Round location screenshot" />
       </div>
       <div className="solo-score-summary" aria-label="Your round result">
         <div className="solo-result-facts">

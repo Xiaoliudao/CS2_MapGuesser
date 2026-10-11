@@ -8,6 +8,7 @@ import { formatScore } from "../lib/formatScore";
 import type { SoloActionName } from "../hooks/useSoloSession";
 import { QuestionImagePanel } from "./QuestionImagePanel";
 import { SoloGuessPanel } from "./SoloGuessPanel";
+import { SoloStageLayout, type SoloStagePhase } from "./SoloStageLayout";
 
 export function SoloGameScreen({
   session,
@@ -28,8 +29,7 @@ export function SoloGameScreen({
 }) {
   const question = session.currentQuestion;
   const [imageLoaded, setImageLoaded] = useState(() => question ? isImagePreloaded(question.imageUrl) : false);
-  const [guessPhase, setGuessPhase] = useState<"map" | "pinpoint">("map");
-  const [mobileView, setMobileView] = useState<"radar" | "photo">("radar");
+  const [guessPhase, setGuessPhase] = useState<SoloStagePhase>("map");
   const remainingMs = useAuthoritativeCountdown({
     status: session.status,
     roundEndsAt: session.roundEndsAt,
@@ -41,7 +41,6 @@ export function SoloGameScreen({
   useEffect(() => {
     setImageLoaded(question ? isImagePreloaded(question.imageUrl) : false);
     setGuessPhase("map");
-    setMobileView("radar");
   }, [question?.imageUrl, question?.questionId]);
   useEffect(() => {
     if (!expired) return;
@@ -60,47 +59,45 @@ export function SoloGameScreen({
 
   if (!question) return null;
   return (
-    <section className={`game-layout-v2 solo-game-layout is-${guessPhase} mobile-view-${mobileView}`}>
-      {guessPhase === "pinpoint" && (
-        <div className="solo-mobile-view-tabs" role="group" aria-label="Solo game view">
-          <button type="button" className={mobileView === "radar" ? "is-active" : ""} aria-pressed={mobileView === "radar"} onClick={() => setMobileView("radar")}>RADAR</button>
-          <button type="button" className={mobileView === "photo" ? "is-active" : ""} aria-pressed={mobileView === "photo"} onClick={() => setMobileView("photo")}>PHOTO</button>
-        </div>
-      )}
-      <SoloGuessPanel
-        questionId={question.questionId}
-        mapPool={session.settings.mapPool}
-        assetOrigin={session.assetOrigin}
-        hintMapId={session.hintMapId}
-        expired={expired}
-        busy={busyAction === "hint" || busyAction === "guess"}
-        onPhaseChange={setGuessPhase}
-        onHint={onHint}
-        onSubmit={onSubmit}
-      />
-
-      <section className="question-workspace">
-        <QuestionImagePanel
-          className="question-frame-v2"
-          src={question.imageUrl}
-          alt="Location screenshot to identify"
-          loading={!imageLoaded}
-          showScanline
-          onLoad={() => setImageLoaded(true)}
-        />
-        <div className="round-console">
-          <div><span>ROUND</span><strong>{session.round} <i>/ {session.settings.totalRounds}</i></strong></div>
-          <div className={remainingMs !== null && remainingMs <= 5_000 ? "urgent" : ""}>
-            <span>TIME LEFT</span>
-            {remainingMs === null
-              ? <strong className="open">SYNCING…</strong>
-              : expired
-                ? <strong className="locked">REVEALING…</strong>
-                : <strong>{(remainingMs / 1000).toFixed(1)}<i>s</i></strong>}
+    <SoloStageLayout
+      phase={guessPhase}
+      screenshot={(
+        <section className="question-workspace">
+          <QuestionImagePanel
+            className="question-frame-v2"
+            src={question.imageUrl}
+            alt="Location screenshot to identify"
+            loading={!imageLoaded}
+            showScanline
+            onLoad={() => setImageLoaded(true)}
+          />
+          <div className="round-console">
+            <div><span>ROUND</span><strong>{session.round} <i>/ {session.settings.totalRounds}</i></strong></div>
+            <div className={remainingMs !== null && remainingMs <= 5_000 ? "urgent" : ""}>
+              <span>TIME LEFT</span>
+              {remainingMs === null
+                ? <strong className="open">SYNCING…</strong>
+                : expired
+                  ? <strong className="locked">REVEALING…</strong>
+                  : <strong>{(remainingMs / 1000).toFixed(1)}<i>s</i></strong>}
+            </div>
+            <div><span>SESSION SCORE</span><strong className="solo-score">{formatScore(session.totalScore)}</strong></div>
           </div>
-          <div><span>SESSION SCORE</span><strong className="solo-score">{formatScore(session.totalScore)}</strong></div>
-        </div>
-      </section>
-    </section>
+        </section>
+      )}
+      stageContent={(
+        <SoloGuessPanel
+          questionId={question.questionId}
+          mapPool={session.settings.mapPool}
+          assetOrigin={session.assetOrigin}
+          hintMapId={session.hintMapId}
+          expired={expired}
+          busy={busyAction === "hint" || busyAction === "guess"}
+          onPhaseChange={setGuessPhase}
+          onHint={onHint}
+          onSubmit={onSubmit}
+        />
+      )}
+    />
   );
 }

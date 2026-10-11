@@ -75,10 +75,14 @@ describe("SoloRoundResult", () => {
     }
     const radarTab = screen.getByRole("button", { name: "RADAR" });
     const photoTab = screen.getByRole("button", { name: "PHOTO" });
-    expect(radarTab.getAttribute("aria-pressed")).toBe("true");
-    fireEvent.click(photoTab);
     expect(photoTab.getAttribute("aria-pressed")).toBe("true");
     expect(document.querySelector(".solo-round-result-media")?.classList.contains("mobile-view-photo")).toBe(true);
+    const media = document.querySelector(".solo-round-result-media");
+    expect(media?.getAttribute("data-screenshot-placement")).toBe("first");
+    expect(media?.firstElementChild?.classList.contains("result-question-image")).toBe(true);
+    fireEvent.click(radarTab);
+    expect(radarTab.getAttribute("aria-pressed")).toBe("true");
+    expect(media?.classList.contains("mobile-view-radar")).toBe(true);
     expect(screen.getByRole("img", { name: "Round location screenshot" }).closest(".question-image-panel")?.getAttribute("data-image-fit")).toBe("contain");
   });
 });

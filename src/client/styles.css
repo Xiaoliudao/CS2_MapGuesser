@@ -888,19 +888,12 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   width: min(1500px, 100%);
   height: 100%;
   margin: 0 auto;
+  grid-template-columns: minmax(0, 56fr) minmax(360px, 44fr);
   gap: 10px;
   align-items: stretch;
 }
-.solo-game-layout.is-map {
-  grid-template-columns: minmax(0, 58fr) minmax(340px, 42fr);
-}
-.solo-game-layout.is-map .question-workspace { grid-column: 1; grid-row: 1; }
-.solo-game-layout.is-map .solo-guess-workspace { grid-column: 2; grid-row: 1; }
-.solo-game-layout.is-pinpoint {
-  grid-template-columns: minmax(360px, 52fr) minmax(0, 48fr);
-}
-.solo-game-layout.is-pinpoint .solo-guess-workspace { grid-column: 1; grid-row: 1; }
-.solo-game-layout.is-pinpoint .question-workspace { grid-column: 2; grid-row: 1; }
+.solo-game-layout .question-workspace { grid-column: 1; grid-row: 1; }
+.solo-game-layout .solo-guess-workspace { grid-column: 2; grid-row: 1; }
 .solo-game-layout .guess-workspace,
 .solo-game-layout .question-workspace {
   height: 100%;
@@ -1118,18 +1111,17 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
     font-size: 7px;
   }
   .solo-shell.has-active-session .solo-stage-host { padding: 7px 7px calc(7px + env(safe-area-inset-bottom)); }
-  .solo-game-layout { gap: 6px; }
-  .solo-game-layout.is-map {
+  .solo-game-layout {
+    gap: 6px;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 42fr) minmax(0, 58fr);
+    grid-template-rows: minmax(0, 38fr) minmax(0, 62fr);
   }
-  .solo-game-layout.is-map .question-workspace { grid-column: 1; grid-row: 1; }
-  .solo-game-layout.is-map .solo-guess-workspace { grid-column: 1; grid-row: 2; }
-  .solo-game-layout.is-map .question-workspace { padding: 5px; }
-  .solo-game-layout.is-map .round-console { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 4px; }
-  .solo-game-layout.is-map .round-console > div { grid-column: auto; padding: 5px 6px; }
-  .solo-game-layout.is-map .round-console span { margin-bottom: 2px; font-size: 6px; }
-  .solo-game-layout.is-map .round-console strong { font-size: 15px; }
+  .solo-game-layout .question-workspace { grid-column: 1; grid-row: 1; padding: 5px; }
+  .solo-game-layout .solo-guess-workspace { grid-column: 1; grid-row: 2; }
+  .solo-game-layout .round-console { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 4px; }
+  .solo-game-layout .round-console > div { grid-column: auto; padding: 5px 6px; }
+  .solo-game-layout .round-console span { margin-bottom: 2px; font-size: 6px; }
+  .solo-game-layout .round-console strong { font-size: 15px; }
   .solo-guess-workspace { padding: 8px; }
   .solo-guess-workspace .solo-hint { min-height: 34px; margin-bottom: 5px; }
   .solo-guess-workspace .solo-hint-button,
@@ -1148,17 +1140,6 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   }
   .solo-guess-workspace.is-map-selection .map-selector button { min-height: 0; }
   .solo-guess-workspace.is-map-selection .map-selector button span { bottom: 4px; min-height: 20px; font-size: 14px; }
-  .solo-game-layout.is-pinpoint {
-    position: relative;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 34px minmax(0, 1fr);
-  }
-  .solo-game-layout.is-pinpoint .solo-mobile-view-tabs { grid-column: 1; grid-row: 1; }
-  .solo-game-layout.is-pinpoint .solo-guess-workspace,
-  .solo-game-layout.is-pinpoint .question-workspace {
-    grid-column: 1;
-    grid-row: 2;
-  }
   .solo-mobile-view-tabs {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1178,29 +1159,6 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
     border-color: var(--orange);
     background: rgba(255,107,44,.13);
   }
-  .solo-game-layout.is-pinpoint .question-workspace {
-    z-index: 3;
-    height: auto;
-    margin: 126px 0 54px;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: opacity .15s ease;
-  }
-  .solo-game-layout.is-pinpoint.mobile-view-photo .question-workspace {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-  }
-  .solo-game-layout.is-pinpoint.mobile-view-photo .solo-guess-workspace .radar-picker {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
-  .solo-game-layout.is-pinpoint .solo-guess-workspace { z-index: auto; }
-  .solo-game-layout.is-pinpoint .solo-hint,
-  .solo-game-layout.is-pinpoint .confirm-guess { position: relative; z-index: 4; }
-  .solo-game-layout.is-pinpoint .question-workspace .round-console { display: none; }
   .solo-guess-workspace.is-pinpoint .radar-title { margin-block: 4px; }
   .solo-guess-workspace.is-pinpoint .radar-title strong { font-size: 20px; }
   .solo-guess-workspace.is-pinpoint .radar-step-copy small { max-width: 230px; margin-top: 2px; font-size: 7px; }
