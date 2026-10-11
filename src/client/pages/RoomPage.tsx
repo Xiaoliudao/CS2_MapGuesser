@@ -206,6 +206,7 @@ export function RoomPage({ roomCode }: { roomCode: string }) {
 
   const sendEvent = (event: ClientEvent) => send(event);
   const fullyCompleted = room ? hasFullyCompletedMatch(room) : false;
+  const hasActiveMultiplayerStage = room?.status === "playing" || room?.status === "round_result";
   const leaveActionLabel = isLeaving
     ? "LEAVING…"
     : room?.status === "waiting" || viewerReturnedToLobby
@@ -215,7 +216,7 @@ export function RoomPage({ roomCode }: { roomCode: string }) {
         : "LEAVE MATCH";
 
   return (
-    <main className="room-shell">
+    <main className={`room-shell multiplayer-shell ${hasActiveMultiplayerStage ? "has-active-multiplayer-stage" : ""} multiplayer-status-${room?.status ?? "loading"}`}>
       <header className="room-header">
         <button className="wordmark" type="button" disabled={isLeaving} onClick={() => requestLeave()}>CS2 <span>MG</span></button>
         <div className="room-identity">
@@ -310,23 +311,27 @@ export function RoomPage({ roomCode }: { roomCode: string }) {
         />
       )}
       {room?.status === "playing" && !viewerIsDnf && (
-        <GameScreen
-          room={room}
-          playerId={playerId}
-          serverClockOffsetMs={serverClockOffsetMs}
-          clockSynchronized={clockSynchronized}
-          onSend={sendEvent}
-          onKick={requestKick}
-          kickingPlayerId={isKicking ? kickTargetId : null}
-        />
+        <div className="multiplayer-stage-host">
+          <GameScreen
+            room={room}
+            playerId={playerId}
+            serverClockOffsetMs={serverClockOffsetMs}
+            clockSynchronized={clockSynchronized}
+            onSend={sendEvent}
+            onKick={requestKick}
+            kickingPlayerId={isKicking ? kickTargetId : null}
+          />
+        </div>
       )}
       {room?.status === "round_result" && (
-        <RoundResult
-          room={room}
-          playerId={playerId}
-          onKick={requestKick}
-          kickingPlayerId={isKicking ? kickTargetId : null}
-        />
+        <div className="multiplayer-stage-host">
+          <RoundResult
+            room={room}
+            playerId={playerId}
+            onKick={requestKick}
+            kickingPlayerId={isKicking ? kickTargetId : null}
+          />
+        </div>
       )}
       {room?.status === "finished" && !viewerReturnedToLobby && (
         <GameResult

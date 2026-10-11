@@ -52,11 +52,16 @@ describe("GameScreen authoritative timer", () => {
     expect(screen.queryByText(/30\.\d/)).toBeNull();
     expect(screen.getByText("WHICH MAP IS THIS LOCATION ON?")).toBeTruthy();
     expect(screen.getByText("First choose the correct map, then pinpoint the exact location in the next step.")).toBeTruthy();
-    expect(screen.getByRole("img", { name: "Location screenshot to identify" }).closest(".question-image-panel")?.getAttribute("data-image-fit")).toBe("contain");
+    const screenshot = screen.getByRole("img", { name: "Location screenshot to identify" });
+    const layout = document.querySelector(".multiplayer-game-layout");
+    expect(screenshot.closest(".question-image-panel")?.getAttribute("data-image-fit")).toBe("contain");
+    expect(layout?.getAttribute("data-screenshot-placement")).toBe("first");
+    expect(layout?.firstElementChild?.classList.contains("question-workspace")).toBe(true);
 
     fireEvent.click(screen.getByRole("button", { name: "Select Mirage" }));
     expect(screen.getByText("STEP 2 · PINPOINT LOCATION")).toBeTruthy();
     expect(screen.getByText("Now place your marker on the 2D radar to mark the exact spot.")).toBeTruthy();
+    expect(document.querySelector(".multiplayer-game-layout")?.firstElementChild?.contains(screenshot)).toBe(true);
   });
 
   it("stays on the playing screen at zero and waits for the server result", async () => {

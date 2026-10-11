@@ -768,33 +768,8 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .marker-legend > span[class*="player-slot-"] { display: inline-flex; align-items: center; gap: 5px; color: #b8c2c6; }
 .marker-legend > span[class*="player-slot-"] i { width: 8px; height: 8px; border: 2px solid var(--player-color); border-radius: 50%; background: rgba(7,10,12,.8); }
 
-.round-result-leaderboard { display: grid; gap: 1px; margin-top: 14px; border: 1px solid #2b363b; background: #2b363b; }
-.round-result-leaderboard > div { display: grid; grid-template-columns: 34px 36px minmax(120px, .8fr) minmax(220px, 1.4fr) auto auto; align-items: center; gap: 9px; min-width: 0; padding: 11px 13px; background: #0b1114; }
-.round-result-leaderboard > div.is-me { background: #12191d; box-shadow: inset 3px 0 var(--orange); }
-.round-result-leaderboard > div.is-dnf { opacity: .72; }
 .round-result-rank { color: #6d797f; font: 800 15px/1 "Arial Narrow", sans-serif; }
 .round-result-seat, .final-player-seat { display: inline-grid; place-items: center; min-height: 24px; color: var(--player-color, #b8c2c6); border: 1px solid var(--player-color, #536169); font-size: 8px; font-weight: 900; letter-spacing: .07em; }
-.round-result-leaderboard strong { display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 16px/1 "Arial Narrow", sans-serif; }
-.round-result-leaderboard strong small { color: #15100d; background: var(--orange); padding: 2px 4px; font-size: 6px; }
-.round-result-accuracy { color: #8d999e; font-size: 8px; font-weight: 700; letter-spacing: .06em; }
-.round-result-leaderboard > div > b { display: grid; justify-items: end; gap: 3px; font: 800 22px/1 "Arial Narrow", sans-serif; }
-.round-result-leaderboard > div > b em { color: #fff; font-style: normal; }
-.round-result-leaderboard > div > b small { color: var(--lime); font: 800 7px/1 Inter, sans-serif; letter-spacing: .08em; }
-.round-result-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px; margin-top: 8px; }
-.round-result-details details { min-width: 0; border: 1px solid #2b363b; background: #0b1114; }
-.round-result-details details.is-me { border-top-color: var(--orange); }
-.round-result-details details.is-dnf { opacity: .72; }
-.round-result-details summary { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto auto; align-items: center; gap: 7px; min-height: 48px; padding: 8px 10px; cursor: pointer; list-style: none; }
-.round-result-details summary::-webkit-details-marker { display: none; }
-.round-result-details summary::after { content: "+"; color: #758188; font-size: 17px; }
-.round-result-details details[open] summary::after { content: "−"; }
-.round-result-details summary strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 15px/1 "Arial Narrow", sans-serif; }
-.round-result-details summary small { color: #15100d; background: var(--orange); padding: 2px 4px; font-size: 6px; font-weight: 900; }
-.round-result-details summary > b { color: #fff; font: 800 19px/1 "Arial Narrow", sans-serif; }
-.round-result-details dl { margin: 0; padding: 2px 12px 13px; display: grid; gap: 7px; }
-.round-result-details dl div { display: flex; justify-content: space-between; gap: 10px; font-size: 10px; }
-.round-result-details dt { color: #69767c; font-size: 7px; letter-spacing: .12em; }
-.round-result-details dd { margin: 0; text-align: right; }
 
 .room-shell .final-card { max-width: 760px; }
 .room-shell .winner-block > small { display: block; margin-top: 9px; color: #829096; font-size: 8px; font-weight: 800; letter-spacing: .12em; }
@@ -814,9 +789,6 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 @media (max-width: 720px) {
   .room-shell .lobby-slots { grid-template-columns: 1fr; }
   .room-shell .player-strip { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-  .round-result-leaderboard > div { grid-template-columns: 30px 34px minmax(0, 1fr) auto; }
-  .round-result-accuracy { grid-column: 3 / -1; }
-  .round-result-leaderboard .host-kick-button { grid-column: 4; grid-row: 2; justify-self: end; }
 }
 
 @media (max-width: 520px) {
@@ -828,14 +800,42 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   .room-shell .player-strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(185px, 78vw); grid-template-columns: none; overflow-x: auto; scroll-snap-type: x proximity; }
   .room-shell .score-player { scroll-snap-align: start; }
   .room-shell .prepare-status-list { grid-template-columns: 1fr; }
-  .round-result-leaderboard > div { grid-template-columns: 28px 32px minmax(0, 1fr) auto; padding: 10px 8px; gap: 6px; }
-  .round-result-details { grid-template-columns: 1fr; }
   .room-shell .final-scores > div { grid-template-columns: 28px 34px minmax(0, 1fr) auto; padding: 11px 9px; gap: 6px; }
   .room-shell .post-match-return-status { align-items: flex-start; flex-direction: column; }
   .room-shell .post-match-return-status strong { text-align: left; }
 }
 
-/* Solo viewport layout: deliberately isolated from multiplayer room screens. */
+/* Shared single-screen game stage used by solo and multiplayer. */
+.multiplayer-shell.has-active-multiplayer-stage {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  padding-bottom: 0;
+  display: grid;
+  grid-template-rows: 70px minmax(0, 1fr);
+  overflow: hidden;
+}
+.multiplayer-shell.has-active-multiplayer-stage .room-header {
+  position: relative;
+  top: auto;
+}
+.multiplayer-shell.has-active-multiplayer-stage > .error-banner {
+  position: fixed;
+  z-index: 55;
+  top: 78px;
+  left: 50%;
+  margin: 0;
+  transform: translateX(-50%);
+  box-shadow: 0 10px 30px rgba(0,0,0,.5);
+}
+.multiplayer-stage-host {
+  min-width: 0;
+  min-height: 0;
+  padding: 10px clamp(10px, 1.5vw, 22px) calc(10px + env(safe-area-inset-bottom));
+  overflow: hidden;
+}
+.multiplayer-stage-host > * { min-width: 0; min-height: 0; }
+
 .solo-shell.has-active-session {
   height: 100vh;
   height: 100dvh;
@@ -884,29 +884,31 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   overflow: auto;
 }
 
-.solo-game-layout {
+.game-stage-layout {
   width: min(1500px, 100%);
   height: 100%;
   margin: 0 auto;
   grid-template-columns: minmax(0, 56fr) minmax(360px, 44fr);
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 10px;
   align-items: stretch;
 }
-.solo-game-layout .question-workspace { grid-column: 1; grid-row: 1; }
-.solo-game-layout .solo-guess-workspace { grid-column: 2; grid-row: 1; }
-.solo-game-layout .guess-workspace,
-.solo-game-layout .question-workspace {
+.game-stage-layout .question-workspace { grid-column: 1; grid-row: 1; }
+.game-stage-layout .guess-workspace { grid-column: 2; grid-row: 1; }
+.game-stage-layout .game-score-row { grid-column: 1 / -1; grid-row: 2; min-height: 0; }
+.game-stage-layout .guess-workspace,
+.game-stage-layout .question-workspace {
   height: 100%;
   min-height: 0;
 }
-.solo-game-layout .question-workspace { padding: 8px; }
-.solo-game-layout .question-frame-v2 { min-height: 0; }
-.solo-game-layout .question-frame-v2 .question-image-panel-image { max-height: 100%; }
-.solo-game-layout .round-console { flex: 0 0 auto; margin-top: 7px; }
-.solo-game-layout .round-console > div { padding: 8px 9px; }
-.solo-game-layout .round-console span { margin-bottom: 3px; }
-.solo-game-layout .round-console strong { font-size: 18px; }
-.solo-guess-workspace {
+.game-stage-layout .question-workspace { padding: 8px; }
+.game-stage-layout .question-frame-v2 { min-height: 0; }
+.game-stage-layout .question-frame-v2 .question-image-panel-image { max-height: 100%; }
+.game-stage-layout .round-console { flex: 0 0 auto; margin-top: 7px; }
+.game-stage-layout .round-console > div { padding: 8px 9px; }
+.game-stage-layout .round-console span { margin-bottom: 3px; }
+.game-stage-layout .round-console strong { font-size: 18px; }
+.game-stage-layout .guess-workspace {
   padding: 14px;
   overflow: hidden;
 }
@@ -915,33 +917,36 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .solo-guess-workspace .solo-hint-confirm { min-height: 40px; padding-block: 4px; }
 .solo-guess-workspace .solo-hint-confirm button { min-height: 34px; }
 .solo-guess-workspace .solo-hint-reveal { min-height: 40px; padding-block: 6px; }
-.solo-guess-workspace.is-map-selection {
+.game-stage-layout .guess-workspace.is-map-selection {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.solo-guess-workspace.is-map-selection {
   grid-template-rows: auto auto minmax(0, 1fr);
 }
-.solo-guess-workspace.is-map-selection .map-selection-heading { margin-bottom: 8px; }
-.solo-guess-workspace.is-map-selection .map-selection-heading h2 { margin: 5px 0 4px; font-size: clamp(24px, 3vw, 38px); }
-.solo-guess-workspace.is-map-selection .map-selection-heading p { font-size: 10px; line-height: 1.35; }
-.solo-guess-workspace.is-map-selection .map-selector {
+.game-stage-layout .guess-workspace.is-map-selection .map-selection-heading { margin-bottom: 8px; }
+.game-stage-layout .guess-workspace.is-map-selection .map-selection-heading h2 { margin: 5px 0 4px; font-size: clamp(24px, 3vw, 38px); }
+.game-stage-layout .guess-workspace.is-map-selection .map-selection-heading p { font-size: 10px; line-height: 1.35; }
+.game-stage-layout .guess-workspace.is-map-selection .map-selector {
   min-height: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(4, minmax(46px, 1fr));
   gap: 6px;
 }
-.solo-guess-workspace.is-map-selection .map-selector button { min-height: 0; }
-.solo-guess-workspace.is-map-selection .map-selector button span { bottom: 6px; min-height: 24px; font-size: 16px; }
-.solo-guess-workspace.is-pinpoint {
+.game-stage-layout .guess-workspace.is-map-selection .map-selector button { min-height: 0; }
+.game-stage-layout .guess-workspace.is-map-selection .map-selector button span { bottom: 6px; min-height: 24px; font-size: 16px; }
+.game-stage-layout .guess-workspace.is-pinpoint {
   display: flex;
   min-height: 0;
   flex-direction: column;
 }
-.solo-guess-workspace.is-pinpoint .change-map-button { flex: 0 0 auto; align-self: flex-start; }
-.solo-guess-workspace.is-pinpoint .radar-title { flex: 0 0 auto; margin: 7px 0 6px; }
-.solo-guess-workspace.is-pinpoint .radar-title strong { font-size: clamp(22px, 2.5vw, 30px); }
-.solo-guess-workspace.is-pinpoint .radar-step-copy small { max-width: 380px; margin-top: 3px; font-size: 8px; }
-.solo-guess-workspace.is-pinpoint .layer-tabs { flex: 0 0 auto; margin-bottom: 6px; }
-.solo-guess-workspace.is-pinpoint .layer-tabs button { min-height: 34px; padding: 5px; }
-.solo-guess-workspace.is-pinpoint .radar-picker {
+.game-stage-layout .guess-workspace.is-pinpoint .change-map-button { flex: 0 0 auto; align-self: flex-start; }
+.game-stage-layout .guess-workspace.is-pinpoint .radar-title { flex: 0 0 auto; margin: 7px 0 6px; }
+.game-stage-layout .guess-workspace.is-pinpoint .radar-title strong { font-size: clamp(22px, 2.5vw, 30px); }
+.game-stage-layout .guess-workspace.is-pinpoint .radar-step-copy small { max-width: 380px; margin-top: 3px; font-size: 8px; }
+.game-stage-layout .guess-workspace.is-pinpoint .layer-tabs { flex: 0 0 auto; margin-bottom: 6px; }
+.game-stage-layout .guess-workspace.is-pinpoint .layer-tabs button { min-height: 34px; padding: 5px; }
+.game-stage-layout .guess-workspace.is-pinpoint .radar-picker {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
@@ -949,7 +954,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   align-items: center;
   justify-content: center;
 }
-.solo-guess-workspace.is-pinpoint .radar-image-wrap {
+.game-stage-layout .guess-workspace.is-pinpoint .radar-image-wrap {
   width: auto;
   height: 100%;
   max-width: 100%;
@@ -957,7 +962,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   margin: 0 auto;
   aspect-ratio: 1;
 }
-.solo-guess-workspace.is-pinpoint .radar-instruction {
+.game-stage-layout .guess-workspace.is-pinpoint .radar-instruction {
   position: absolute;
   z-index: 22;
   right: 6px;
@@ -969,12 +974,12 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   background: rgba(7,10,12,.8);
   pointer-events: none;
 }
-.solo-guess-workspace.is-pinpoint .confirm-guess {
+.game-stage-layout .guess-workspace.is-pinpoint .confirm-guess {
   flex: 0 0 auto;
   min-height: 46px;
   margin-top: 8px;
 }
-.solo-mobile-view-tabs { display: none; }
+.stage-view-tabs { display: none; }
 
 .solo-round-result {
   width: min(1450px, 100%);
@@ -1069,6 +1074,148 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .solo-next-action { width: 100%; margin: 0; }
 .solo-next-action .primary-button { min-height: 46px; }
 
+.multiplayer-game-layout .player-strip {
+  max-height: 62px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(180px, 1fr);
+  grid-template-columns: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+}
+.multiplayer-game-layout .score-player { min-height: 60px; padding-block: 7px; scroll-snap-align: start; }
+
+.multiplayer-round-result {
+  width: min(1450px, 100%);
+  height: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  overflow: hidden;
+}
+.multiplayer-round-result .result-page-heading { min-height: 38px; margin: 0; }
+.multiplayer-round-result .result-page-heading h2 { margin-top: 2px; font-size: clamp(27px, 3.5vw, 38px); }
+.multiplayer-round-result .result-page-heading p { margin: 0; }
+.multiplayer-result-view-tabs { display: none; }
+.multiplayer-round-result-media {
+  min-height: 0;
+  height: 100%;
+  gap: 8px;
+}
+.multiplayer-round-result-media .result-radar-panel,
+.multiplayer-round-result-media .result-question-image {
+  min-height: 0;
+  height: 100%;
+  padding: 8px;
+  overflow: hidden;
+}
+.multiplayer-round-result-media .result-radar-panel {
+  display: flex;
+  flex-direction: column;
+}
+.multiplayer-round-result-media .radar-title { flex: 0 0 auto; margin: 0 0 5px; }
+.multiplayer-round-result-media .radar-title strong { font-size: 23px; }
+.multiplayer-round-result-media .result-radar {
+  flex: 1 1 auto;
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1;
+}
+.multiplayer-round-result-media .marker-legend { flex: 0 0 auto; margin-top: 5px; }
+.multiplayer-round-result-media .result-question-image .question-image-panel-image { max-height: 100%; }
+.multiplayer-result-table {
+  max-height: min(230px, 29vh);
+  overflow: auto;
+  border: 1px solid #2b363b;
+  background: #2b363b;
+}
+.multiplayer-result-table-head,
+.multiplayer-result-table summary {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) 82px 82px;
+  align-items: center;
+  gap: 8px;
+}
+.multiplayer-result-table-head {
+  min-height: 24px;
+  padding: 0 12px;
+  color: #758188;
+  background: #0a0f11;
+  font-size: 6px;
+  font-weight: 900;
+  letter-spacing: .13em;
+}
+.multiplayer-result-table-head span:nth-last-child(-n + 2) { text-align: right; }
+.multiplayer-result-table details {
+  min-width: 0;
+  border-top: 1px solid #2b363b;
+  background: #0b1114;
+}
+.multiplayer-result-table details.is-me { background: #12191d; box-shadow: inset 3px 0 var(--orange); }
+.multiplayer-result-table details.is-dnf { opacity: .72; }
+.multiplayer-result-table summary {
+  min-height: 38px;
+  padding: 5px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.multiplayer-result-table summary::-webkit-details-marker { display: none; }
+.multiplayer-result-table summary::after { display: none; }
+.multiplayer-result-player {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.multiplayer-result-player .round-result-seat {
+  flex: 0 0 30px;
+  min-height: 22px;
+  font-style: normal;
+}
+.multiplayer-result-player strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 14px/1 "Arial Narrow", sans-serif;
+}
+.multiplayer-result-player small {
+  flex: 0 0 auto;
+  padding: 2px 4px;
+  color: #15100d;
+  background: var(--orange);
+  font-size: 6px;
+  font-weight: 900;
+}
+.multiplayer-result-player small.is-dnf-label { color: #2b1510; background: #ff9a78; }
+.multiplayer-round-score,
+.multiplayer-total-score { justify-self: end; font: 900 18px/1 "Arial Narrow", sans-serif; }
+.multiplayer-round-score { color: #fff; }
+.multiplayer-total-score { color: var(--lime); }
+.multiplayer-result-detail-body {
+  padding: 0 12px 10px 74px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+.multiplayer-result-detail-body dl {
+  min-width: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: #28343a;
+}
+.multiplayer-result-detail-body dl div { min-width: 0; padding: 6px 7px; background: #0a1013; }
+.multiplayer-result-detail-body dt { color: #69767c; font-size: 6px; letter-spacing: .1em; }
+.multiplayer-result-detail-body dd { margin: 3px 0 0; overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.multiplayer-result-detail-body .host-kick-button { align-self: stretch; }
+
 .solo-final-card {
   width: min(760px, 100%);
   height: 100%;
@@ -1087,6 +1234,30 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .solo-final-card .final-actions { margin-top: 12px; }
 
 @media (max-width: 720px) {
+  .multiplayer-shell.has-active-multiplayer-stage {
+    grid-template-rows: 82px minmax(0, 1fr);
+  }
+  .multiplayer-shell.has-active-multiplayer-stage .room-header {
+    height: 82px;
+    min-height: 82px;
+    grid-template-columns: minmax(62px, 1fr) auto;
+    grid-template-rows: 38px 28px;
+    padding: 5px 10px;
+    gap: 2px 8px;
+  }
+  .multiplayer-shell.has-active-multiplayer-stage .wordmark { font-size: 18px; }
+  .multiplayer-shell.has-active-multiplayer-stage .room-identity {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex-wrap: nowrap;
+  }
+  .multiplayer-shell.has-active-multiplayer-stage .room-identity strong { font-size: 15px; }
+  .multiplayer-shell.has-active-multiplayer-stage .room-header-actions { grid-column: 2; grid-row: 1; gap: 6px; }
+  .multiplayer-shell.has-active-multiplayer-stage .connection-status { font-size: 7px; }
+  .multiplayer-shell.has-active-multiplayer-stage .multiplayer-leave-button { min-height: 32px; padding-inline: 8px; font-size: 7px; }
+  .multiplayer-shell.has-active-multiplayer-stage > .error-banner { top: 90px; }
+  .multiplayer-stage-host { padding: 7px 7px calc(7px + env(safe-area-inset-bottom)); }
+
   .solo-shell.has-active-session {
     grid-template-rows: 52px minmax(0, 1fr);
   }
@@ -1111,18 +1282,18 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
     font-size: 7px;
   }
   .solo-shell.has-active-session .solo-stage-host { padding: 7px 7px calc(7px + env(safe-area-inset-bottom)); }
-  .solo-game-layout {
+  .game-stage-layout {
     gap: 6px;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 38fr) minmax(0, 62fr);
+    grid-template-rows: minmax(0, 38fr) minmax(0, 62fr) auto;
   }
-  .solo-game-layout .question-workspace { grid-column: 1; grid-row: 1; padding: 5px; }
-  .solo-game-layout .solo-guess-workspace { grid-column: 1; grid-row: 2; }
-  .solo-game-layout .round-console { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 4px; }
-  .solo-game-layout .round-console > div { grid-column: auto; padding: 5px 6px; }
-  .solo-game-layout .round-console span { margin-bottom: 2px; font-size: 6px; }
-  .solo-game-layout .round-console strong { font-size: 15px; }
-  .solo-guess-workspace { padding: 8px; }
+  .game-stage-layout .question-workspace { grid-column: 1; grid-row: 1; padding: 5px; }
+  .game-stage-layout .guess-workspace { grid-column: 1; grid-row: 2; padding: 8px; }
+  .game-stage-layout .game-score-row { grid-column: 1; grid-row: 3; }
+  .game-stage-layout .round-console { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 4px; }
+  .game-stage-layout .round-console > div { grid-column: auto; padding: 5px 6px; }
+  .game-stage-layout .round-console span { margin-bottom: 2px; font-size: 6px; }
+  .game-stage-layout .round-console strong { font-size: 15px; }
   .solo-guess-workspace .solo-hint { min-height: 34px; margin-bottom: 5px; }
   .solo-guess-workspace .solo-hint-button,
   .solo-guess-workspace .solo-hint-confirm,
@@ -1130,22 +1301,22 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   .solo-guess-workspace .solo-hint-button { padding-inline: 9px; }
   .solo-guess-workspace .solo-hint-reveal { padding: 5px 8px; }
   .solo-guess-workspace .solo-hint-reveal strong { margin-top: 3px; font-size: 12px; }
-  .solo-guess-workspace.is-map-selection .map-selection-heading { margin-bottom: 5px; }
-  .solo-guess-workspace.is-map-selection .map-selection-heading h2 { margin: 3px 0; font-size: 20px; }
-  .solo-guess-workspace.is-map-selection .map-selection-heading p { font-size: 8px; line-height: 1.25; }
-  .solo-guess-workspace.is-map-selection .map-selector {
+  .game-stage-layout .guess-workspace.is-map-selection .map-selection-heading { margin-bottom: 5px; }
+  .game-stage-layout .guess-workspace.is-map-selection .map-selection-heading h2 { margin: 3px 0; font-size: 20px; }
+  .game-stage-layout .guess-workspace.is-map-selection .map-selection-heading p { font-size: 8px; line-height: 1.25; }
+  .game-stage-layout .guess-workspace.is-map-selection .map-selector {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: repeat(4, minmax(38px, 1fr));
     gap: 4px;
   }
-  .solo-guess-workspace.is-map-selection .map-selector button { min-height: 0; }
-  .solo-guess-workspace.is-map-selection .map-selector button span { bottom: 4px; min-height: 20px; font-size: 14px; }
-  .solo-mobile-view-tabs {
+  .game-stage-layout .guess-workspace.is-map-selection .map-selector button { min-height: 0; }
+  .game-stage-layout .guess-workspace.is-map-selection .map-selector button span { bottom: 4px; min-height: 20px; font-size: 14px; }
+  .stage-view-tabs {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 4px;
   }
-  .solo-mobile-view-tabs button {
+  .stage-view-tabs button {
     min-height: 34px;
     color: #8c999f;
     border: 1px solid #344148;
@@ -1154,22 +1325,93 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
     font-weight: 900;
     letter-spacing: .13em;
   }
-  .solo-mobile-view-tabs button.is-active {
+  .stage-view-tabs button.is-active {
     color: #fff;
     border-color: var(--orange);
     background: rgba(255,107,44,.13);
   }
-  .solo-guess-workspace.is-pinpoint .radar-title { margin-block: 4px; }
-  .solo-guess-workspace.is-pinpoint .radar-title strong { font-size: 20px; }
-  .solo-guess-workspace.is-pinpoint .radar-step-copy small { max-width: 230px; margin-top: 2px; font-size: 7px; }
-  .solo-guess-workspace.is-pinpoint .layer-tabs { margin-bottom: 4px; }
-  .solo-guess-workspace.is-pinpoint .layer-tabs button { min-height: 30px; font-size: 8px; }
-  .solo-guess-workspace.is-pinpoint .confirm-guess { min-height: 46px; margin-top: 5px; }
-  .solo-guess-workspace.is-pinpoint .radar-zoom-controls {
+  .game-stage-layout .guess-workspace.is-pinpoint .radar-title { margin-block: 4px; }
+  .game-stage-layout .guess-workspace.is-pinpoint .radar-title strong { font-size: 20px; }
+  .game-stage-layout .guess-workspace.is-pinpoint .radar-step-copy small { max-width: 230px; margin-top: 2px; font-size: 7px; }
+  .game-stage-layout .guess-workspace.is-pinpoint .layer-tabs { margin-bottom: 4px; }
+  .game-stage-layout .guess-workspace.is-pinpoint .layer-tabs button { min-height: 30px; font-size: 8px; }
+  .game-stage-layout .guess-workspace.is-pinpoint .confirm-guess { min-height: 46px; margin-top: 5px; }
+  .game-stage-layout .guess-workspace.is-pinpoint .radar-zoom-controls {
     grid-template-columns: 36px 44px 36px;
     grid-template-rows: 36px 36px;
   }
-  .solo-guess-workspace.is-pinpoint .radar-zoom-controls .radar-reset-button { min-height: 36px; }
+  .game-stage-layout .guess-workspace.is-pinpoint .radar-zoom-controls .radar-reset-button { min-height: 36px; }
+
+  .multiplayer-game-layout .player-strip {
+    max-height: 56px;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(168px, 72vw);
+    grid-template-columns: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+  }
+  .multiplayer-game-layout .score-player {
+    min-height: 54px;
+    padding: 5px 8px;
+    scroll-snap-align: start;
+  }
+  .multiplayer-game-layout .score-player strong { font-size: 13px; }
+  .multiplayer-game-layout .score-player b { font-size: 18px; }
+
+  .multiplayer-round-result {
+    grid-template-rows: auto 34px minmax(0, 1fr) auto;
+    gap: 5px;
+  }
+  .multiplayer-round-result .result-page-heading { min-height: 32px; }
+  .multiplayer-round-result .result-page-heading h2 { font-size: 24px; }
+  .multiplayer-round-result .result-page-heading p { font-size: 6px; }
+  .multiplayer-result-view-tabs { grid-row: 2; }
+  .multiplayer-round-result-media {
+    position: relative;
+    grid-row: 3;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .multiplayer-round-result-media .result-radar-panel,
+  .multiplayer-round-result-media .result-question-image {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 5px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .15s ease;
+  }
+  .multiplayer-round-result-media.mobile-view-radar .result-radar-panel,
+  .multiplayer-round-result-media.mobile-view-photo .result-question-image {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .multiplayer-round-result-media .radar-title strong { font-size: 19px; }
+  .multiplayer-round-result-media .marker-legend { font-size: 7px; }
+  .multiplayer-result-table {
+    grid-row: 4;
+    max-height: min(185px, 27vh);
+  }
+  .multiplayer-result-table-head,
+  .multiplayer-result-table summary {
+    grid-template-columns: 34px minmax(0, 1fr) 52px 52px;
+    gap: 5px;
+  }
+  .multiplayer-result-table-head { padding-inline: 7px; }
+  .multiplayer-result-table summary { min-height: 35px; padding: 4px 7px; }
+  .multiplayer-result-player { gap: 4px; }
+  .multiplayer-result-player .round-result-seat { flex-basis: 26px; min-height: 20px; }
+  .multiplayer-result-player strong { font-size: 12px; }
+  .multiplayer-result-player small { font-size: 5px; }
+  .multiplayer-round-score,
+  .multiplayer-total-score { font-size: 15px; }
+  .multiplayer-result-detail-body { padding: 0 7px 7px 41px; grid-template-columns: minmax(0, 1fr); }
+  .multiplayer-result-detail-body dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .solo-round-result {
     grid-template-rows: auto 34px minmax(0, 1fr) auto auto;
@@ -1234,18 +1476,26 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 }
 
 @media (max-height: 720px) and (min-width: 721px) {
+  .multiplayer-shell.has-active-multiplayer-stage {
+    grid-template-rows: 54px minmax(0, 1fr);
+  }
+  .multiplayer-shell.has-active-multiplayer-stage .room-header { height: 54px; min-height: 54px; }
+  .multiplayer-stage-host { padding-block: 6px calc(6px + env(safe-area-inset-bottom)); }
   .solo-shell.has-active-session {
     grid-template-rows: 48px minmax(0, 1fr);
   }
   .solo-shell.has-active-session .solo-header { height: 48px; min-height: 48px; }
   .solo-shell.has-active-session .solo-stage-host { padding-block: 6px calc(6px + env(safe-area-inset-bottom)); }
-  .solo-guess-workspace { padding: 9px; }
+  .game-stage-layout .guess-workspace { padding: 9px; }
   .solo-guess-workspace .solo-hint { min-height: 34px; margin-bottom: 5px; }
   .solo-guess-workspace .solo-hint-button,
   .solo-guess-workspace .solo-hint-confirm,
   .solo-guess-workspace .solo-hint-reveal { min-height: 34px; }
-  .solo-guess-workspace.is-pinpoint .radar-title { margin-block: 4px; }
-  .solo-guess-workspace.is-pinpoint .confirm-guess { min-height: 40px; margin-top: 5px; }
+  .game-stage-layout .guess-workspace.is-pinpoint .radar-title { margin-block: 4px; }
+  .game-stage-layout .guess-workspace.is-pinpoint .confirm-guess { min-height: 40px; margin-top: 5px; }
+  .multiplayer-game-layout .player-strip { max-height: 52px; }
+  .multiplayer-game-layout .score-player { min-height: 50px; padding-block: 4px; }
+  .multiplayer-result-table { max-height: 180px; }
   .solo-round-result { gap: 5px; }
   .solo-round-result .result-page-heading { min-height: 30px; }
   .solo-round-result .result-page-heading h2 { font-size: 25px; }

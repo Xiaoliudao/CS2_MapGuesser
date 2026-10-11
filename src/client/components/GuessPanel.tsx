@@ -13,6 +13,7 @@ export function GuessPanel({
   assetOrigin,
   submitted,
   expired,
+  onPhaseChange,
   onSend,
 }: {
   questionId: string;
@@ -21,6 +22,7 @@ export function GuessPanel({
   assetOrigin: string;
   submitted: boolean;
   expired: boolean;
+  onPhaseChange?: (phase: "map" | "pinpoint") => void;
   onSend: (event: ClientEvent) => boolean;
 }) {
   const [mapId, setMapId] = useState<MapId | null>(null);
@@ -32,6 +34,10 @@ export function GuessPanel({
     setLayerId("main");
     setPoint(null);
   }, [questionId]);
+
+  useEffect(() => {
+    onPhaseChange?.(mapId ? "pinpoint" : "map");
+  }, [mapId, onPhaseChange]);
 
   const changeMap = () => {
     if (submitted) return;
@@ -49,7 +55,7 @@ export function GuessPanel({
   };
 
   return (
-    <section className={`guess-workspace ${mapId ? "is-pinpoint" : "is-map-selection"}`}>
+    <section className={`guess-workspace multiplayer-guess-workspace ${mapId ? "is-pinpoint" : "is-map-selection"}`}>
       {!mapId ? (
         <>
           <div className="map-selection-heading">

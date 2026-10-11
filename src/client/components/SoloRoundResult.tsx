@@ -35,7 +35,7 @@ export function SoloRoundResult({
         <div><span>ROUND {session.round} COMPLETE</span><h2>POSITION REVEALED</h2></div>
         {result.hintUsed && <p className="solo-hint-used">HINT USED · MAP REVEALED</p>}
       </header>
-      <div className="solo-mobile-view-tabs solo-result-view-tabs" role="group" aria-label="Round result view">
+      <div className="stage-view-tabs solo-result-view-tabs" role="group" aria-label="Round result view">
         <button type="button" className={mobileView === "photo" ? "is-active" : ""} aria-pressed={mobileView === "photo"} onClick={() => setMobileView("photo")}>PHOTO</button>
         <button type="button" className={mobileView === "radar" ? "is-active" : ""} aria-pressed={mobileView === "radar"} onClick={() => setMobileView("radar")}>RADAR</button>
       </div>

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { DEFAULT_ROOM_SETTINGS } from "../../shared/roomSettings";
 import type { GameRoomState, PlayerRoundResult, PublicPlayer } from "../../shared/types";
@@ -85,14 +85,20 @@ describe("RoundResult multiplayer summary", () => {
   it("shows a compact five-player leaderboard, ties, totals, and expandable details", () => {
     render(<RoundResult room={resultRoom()} playerId="player-1" />);
 
-    const leaderboard = screen.getByLabelText("Round leaderboard");
-    expect(leaderboard.querySelectorAll(":scope > div")).toHaveLength(5);
+    const leaderboard = screen.getByRole("table", { name: "Round leaderboard" });
+    expect(leaderboard.querySelectorAll(":scope > details")).toHaveLength(5);
     expect(screen.getAllByText("#1")).toHaveLength(2);
-    expect(screen.getAllByText("TOTAL 250")).toHaveLength(2);
+    expect(screen.getAllByText("250")).toHaveLength(2);
     expect(screen.getAllByText("P5").length).toBeGreaterThan(0);
-    expect(document.querySelectorAll(".round-result-details details")).toHaveLength(5);
-    expect(document.querySelector(".round-result-details details.is-me")?.hasAttribute("open")).toBe(true);
-    expect(document.querySelector(".round-result-leaderboard .is-dnf")).toBeTruthy();
+    const viewerDetails = document.querySelector(".multiplayer-result-table details.is-me") as HTMLDetailsElement;
+    expect(viewerDetails.hasAttribute("open")).toBe(false);
+    fireEvent.click(viewerDetails.querySelector("summary")!);
+    expect(viewerDetails.open).toBe(true);
+    expect(document.querySelector(".multiplayer-result-table .is-dnf")).toBeTruthy();
+    const media = document.querySelector(".multiplayer-round-result-media");
+    expect(media?.getAttribute("data-screenshot-placement")).toBe("first");
+    expect(media?.firstElementChild?.classList.contains("result-question-image")).toBe(true);
+    expect(screen.getByRole("button", { name: "PHOTO" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("img", { name: "Round location screenshot" }).closest(".question-image-panel")?.getAttribute("data-image-fit")).toBe("contain");
   });
 });

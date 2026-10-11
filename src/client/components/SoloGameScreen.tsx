@@ -8,7 +8,7 @@ import { formatScore } from "../lib/formatScore";
 import type { SoloActionName } from "../hooks/useSoloSession";
 import { QuestionImagePanel } from "./QuestionImagePanel";
 import { SoloGuessPanel } from "./SoloGuessPanel";
-import { SoloStageLayout, type SoloStagePhase } from "./SoloStageLayout";
+import { GameStageLayout, type GameStagePhase } from "./GameStageLayout";
 
 export function SoloGameScreen({
   session,
@@ -29,7 +29,7 @@ export function SoloGameScreen({
 }) {
   const question = session.currentQuestion;
   const [imageLoaded, setImageLoaded] = useState(() => question ? isImagePreloaded(question.imageUrl) : false);
-  const [guessPhase, setGuessPhase] = useState<SoloStagePhase>("map");
+  const [guessPhase, setGuessPhase] = useState<GameStagePhase>("map");
   const remainingMs = useAuthoritativeCountdown({
     status: session.status,
     roundEndsAt: session.roundEndsAt,
@@ -59,7 +59,8 @@ export function SoloGameScreen({
 
   if (!question) return null;
   return (
-    <SoloStageLayout
+    <GameStageLayout
+      className="solo-game-layout"
       phase={guessPhase}
       screenshot={(
         <section className="question-workspace">
